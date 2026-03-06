@@ -121,7 +121,7 @@ export function MenuTile({ tile, onClick }: MenuTileProps) {
       className={cn(
         "relative rounded-lg aspect-[1.2] min-h-[110px] w-full transition-all overflow-hidden",
         "active:scale-[0.98]",
-        "focus:outline-none focus:ring-2 focus:ring-[#006aff] focus:ring-offset-2",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#006aff] focus-visible:ring-offset-2",
         getTileStyles()
       )}
     >

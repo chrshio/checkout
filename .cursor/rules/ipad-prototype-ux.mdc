@@ -1,0 +1,40 @@
+---
+description: UX conventions for iPad prototype components in this project
+globs: components/**/*.tsx
+alwaysApply: false
+---
+
+# iPad Prototype UX Conventions
+
+## No Hover Effects
+
+This project is an iPad POS prototype. Touch devices have no hover state, so **never add hover effects** to any interactive element (buttons, inputs, textareas, tiles, etc.).
+
+```tsx
+// ❌ BAD
+className="border-[#dadada] hover:border-[#101010]"
+className="bg-[#f0f0f0] hover:bg-[#e0e0e0]"
+
+// ✅ GOOD — use active: or focus: states only
+className="border-[#dadada] focus:border-[#101010]"
+className="bg-[#f0f0f0] active:bg-[#e0e0e0]"
+```
+
+## New Cart Items
+
+Every `CartItem` created (whether added directly or via the add panel) must include the full set of options fields so the edit panel always has data to work with:
+
+```ts
+{
+  id,
+  name,
+  price,
+  quantity,
+  description,   // from MenuItem
+  modifiers,     // selected modifier ids (omit if empty)
+  note: "",
+  taxes: [],
+  discounts: [],
+  serviceCharges: [],
+}
+```

@@ -17,6 +17,12 @@ interface CartSectionProps {
   onItemClick?: (id: string) => void;
   onEditCancel?: () => void;
   onEditDone?: () => void;
+  isAddMode?: boolean;
+  addingItemId?: string | null;
+  onAddCancel?: () => void;
+  onAdd?: () => void;
+  addDisabled?: boolean;
+  onRemoveItem?: (id: string) => void;
 }
 
 export function CartSection({
@@ -30,22 +36,38 @@ export function CartSection({
   onItemClick,
   onEditCancel,
   onEditDone,
+  isAddMode,
+  addingItemId,
+  onAddCancel,
+  onAdd,
+  addDisabled,
+  onRemoveItem,
 }: CartSectionProps) {
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const isEditMode = editingItemId != null;
 
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col h-full bg-white pr-6">
+        <CartHeader itemCount={0} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-white pr-6">
-      <CartHeader itemCount={itemCount} />
+      <CartHeader itemCount={itemCount} disabled={isEditMode || isAddMode} />
 
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-4">
           <CartItems
             items={items}
             editingItemId={editingItemId}
+            addingItemId={addingItemId}
             onItemClick={onItemClick}
+            onRemoveItem={onRemoveItem}
           />
-          <PricingSummary subtotal={subtotal} tax={tax} total={total} />
+          <PricingSummary subtotal={subtotal} tax={tax} total={total} isFaded={isEditMode || isAddMode} />
         </div>
       </div>
 
@@ -57,6 +79,10 @@ export function CartSection({
           isEditMode={isEditMode}
           onCancel={onEditCancel}
           onDone={onEditDone}
+          isAddMode={isAddMode}
+          onAddCancel={onAddCancel}
+          onAdd={onAdd}
+          addDisabled={addDisabled}
         />
       </div>
     </div>

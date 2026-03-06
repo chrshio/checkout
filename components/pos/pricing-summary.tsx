@@ -1,14 +1,17 @@
 "use client";
 
+import { cn } from "@/lib/utils";
+
 interface PricingSummaryProps {
   subtotal: number;
   tax: number;
   total: number;
+  isFaded?: boolean;
 }
 
-export function PricingSummary({ subtotal, tax, total }: PricingSummaryProps) {
+export function PricingSummary({ subtotal, tax, total, isFaded }: PricingSummaryProps) {
   return (
-    <div className="bg-[#ffffff] border border-[#e5e5e5] rounded-2xl py-3 px-4">
+    <div className={cn("bg-[#ffffff] border border-[#e5e5e5] rounded-2xl py-3 px-4 transition-opacity", isFaded && "opacity-40")}>
       <div className="space-y-4">
         <div className="flex justify-between text-[#101010]">
           <span className="font-medium text-base">Subtotal</span>

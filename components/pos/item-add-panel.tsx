@@ -2,78 +2,48 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Minus, Plus } from "lucide-react";
-import type { CartItem } from "@/lib/pos-types";
+import type { MenuItem } from "@/lib/pos-types";
 import {
-  type ModifierOption,
   type ModifierGroup,
   getModifierGroups,
   isGroupRequirementUnmet,
   computeNewModifiers,
 } from "@/lib/modifiers";
+import {
+  type DraftItemOptions,
+  CheckboxRow,
+  FULFILLMENT_METHODS,
+  TAX_OPTIONS,
+  DISCOUNT_OPTIONS,
+  SERVICE_CHARGE_OPTIONS,
+} from "./item-edit-panel";
 import { cn } from "@/lib/utils";
 
-// ─── Options types ────────────────────────────────────────────────────────────
-
-interface FulfillmentMethod {
-  id: string;
-  name: string;
+interface ItemAddPanelProps {
+  item: MenuItem;
+  onCancel: () => void;
+  draftQuantity: number;
+  draftModifiers: string[];
+  draftOptions: DraftItemOptions;
+  onQuantityChange: (q: number) => void;
+  onModifiersChange: (m: string[]) => void;
+  onOptionsChange: (o: DraftItemOptions) => void;
+  scrollSignal?: { groupId: string; nonce: number } | null;
 }
 
-interface OptionsLineItem {
-  id: string;
-  name: string;
-  type: "percentage" | "fixed";
-  value: number;
-}
-
-export interface DraftItemOptions {
-  note: string;
-  fulfillmentMethod?: string;
-  taxes: string[];
-  discounts: string[];
-  serviceCharges: string[];
-}
-
-// ─── Static data ──────────────────────────────────────────────────────────────
-
-export const FULFILLMENT_METHODS: FulfillmentMethod[] = [
-  { id: "for-here", name: "For here" },
-  { id: "to-go", name: "To go" },
-  { id: "pick-up", name: "Pick up" },
-  { id: "delivery", name: "Delivery" },
-];
-
-export const TAX_OPTIONS: OptionsLineItem[] = [
-  { id: "sales-tax", name: "Sales tax", type: "percentage", value: 6 },
-  { id: "city-tax", name: "City tax", type: "percentage", value: 1.5 },
-  { id: "wealth-tax", name: "Wealth tax", type: "percentage", value: 85 },
-];
-
-export const DISCOUNT_OPTIONS: OptionsLineItem[] = [
-  { id: "friends-family", name: "Friends & family", type: "percentage", value: 20 },
-  { id: "half-off", name: "Half off", type: "percentage", value: 20 },
-  { id: "happy-hour", name: "Happy hour", type: "percentage", value: 20 },
-];
-
-export const SERVICE_CHARGE_OPTIONS: OptionsLineItem[] = [
-  { id: "large-party", name: "Large party", type: "percentage", value: 20 },
-  { id: "corking-fee", name: "Corking fee", type: "fixed", value: 20 },
-  { id: "event-space", name: "Event space", type: "fixed", value: 50 },
-];
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-interface ModifierTileProps {
-  option: ModifierOption | FulfillmentMethod;
+function ModifierTile({
+  option,
+  isSelected,
+  onClick,
+}: {
+  option: { id: string; name: string; price?: number };
   isSelected: boolean;
   onClick: () => void;
-}
-
-function ModifierTile({ option, isSelected, onClick }: ModifierTileProps) {
+}) {
   return (
     <button
       onClick={onClick}
-      className="relative flex flex-col justify-end h-[112px] w-full p-3 rounded-[12px] bg-[#f0f0f0] text-left transition-all"
+      className="relative flex flex-col justify-end h-[112px] w-full p-3 rounded-[12px] bg-[#f0f0f0] text-left transition-all active:scale-[0.97]"
     >
       {isSelected && (
         <div className="absolute inset-0 rounded-[12px] border-2 border-[#101010] pointer-events-none">
@@ -83,113 +53,55 @@ function ModifierTile({ option, isSelected, onClick }: ModifierTileProps) {
       <span className="text-[16px] font-medium text-[#101010] leading-6 truncate">
         {option.name}
       </span>
-      {"price" in option && option.price !== undefined && (
+      {option.price !== undefined && (
         <span className="text-[12px] text-[#101010] leading-[18px]">
-          ${option.price.toFixed(2)}
+          +${option.price.toFixed(2)}
         </span>
       )}
     </button>
   );
 }
 
-export function CheckboxRow({
-  label,
-  value,
-  checked,
-  onToggle,
-}: {
-  label: string;
-  value: string;
-  checked: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className="flex items-center justify-between w-full py-[14px] border-b border-[#f0f0f0] last:border-b-0"
-    >
-      <span className="text-[15px] text-[#101010]">{label}</span>
-      <div className="flex items-center gap-3">
-        <span className="text-[15px] text-[#888]">{value}</span>
-        <div
-          className={cn(
-            "w-[20px] h-[20px] rounded-[4px] border flex items-center justify-center shrink-0",
-            checked
-              ? "bg-[#101010] border-[#101010]"
-              : "bg-white border-[#dadada]"
-          )}
-        >
-          {checked && (
-            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-              <path
-                d="M1 4L4.5 7.5L11 1"
-                stroke="white"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
-        </div>
-      </div>
-    </button>
-  );
-}
-
-// ─── Main component ───────────────────────────────────────────────────────────
-
-interface ItemEditPanelProps {
-  item: CartItem;
-  draftQuantity: number;
-  draftModifiers: string[];
-  draftOptions: DraftItemOptions;
-  onQuantityChange: (quantity: number) => void;
-  onModifiersChange: (modifiers: string[]) => void;
-  onOptionsChange: (options: DraftItemOptions) => void;
-  onCompItem: () => void;
-  onRemoveItem: () => void;
-}
-
-export function ItemEditPanel({
+export function ItemAddPanel({
   item,
+  onCancel,
   draftQuantity,
   draftModifiers,
   draftOptions,
   onQuantityChange,
   onModifiersChange,
   onOptionsChange,
-  onCompItem,
-  onRemoveItem,
-}: ItemEditPanelProps) {
+  scrollSignal,
+}: ItemAddPanelProps) {
+
   const modifierGroups = getModifierGroups(item);
 
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
-  const tabs = [
-    { id: "variations", label: "Variations" },
-    { id: "milk", label: "Milk" },
-    { id: "temperature", label: "Temperature" },
-    { id: "add-ons", label: "Add-ons" },
-    { id: "note", label: "Note" },
-    { id: "options", label: "Options" },
-  ]
-    .filter(
-      (tab) =>
-        tab.id === "note" ||
-        tab.id === "options" ||
-        modifierGroups.some((g) => g.id === tab.id)
-    )
-    .map((tab) => {
-      const group = modifierGroups.find((g) => g.id === tab.id);
-      return {
-        ...tab,
-        alert: group ? isGroupRequirementUnmet(group, draftModifiers) : false,
-      };
-    });
+  // Scroll to the target section whenever a new scroll signal arrives.
+  useEffect(() => {
+    if (!scrollSignal) return;
+    const el = sectionRefs.current[scrollSignal.groupId];
+    if (el) {
+      setActiveTabId(scrollSignal.groupId);
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollSignal?.nonce]);
 
-  // Keep a stable ref to the tabs array so the scroll listener never goes stale.
+  const tabs = [
+    ...modifierGroups.map((group) => ({
+      id: group.id,
+      label: group.name,
+      required: !!(group.minSelect && group.minSelect > 0),
+      alert: isGroupRequirementUnmet(group, draftModifiers),
+    })),
+    { id: "note", label: "Note", required: false, alert: false },
+    { id: "options", label: "Options", required: false, alert: false },
+  ];
+
   const tabsRef = useRef(tabs);
   useEffect(() => {
     tabsRef.current = tabs;
@@ -203,20 +115,12 @@ export function ItemEditPanel({
 
     const onScroll = () => {
       const { scrollTop } = container;
-
-      // Walk sections in order. The last one whose top (relative to the
-      // scroll container's scroll origin) has been scrolled to within
-      // THRESHOLD px of the top edge wins.
       const THRESHOLD = 80;
       let next: string | null = null;
       for (const { id } of tabsRef.current) {
         const el = sectionRefs.current[id];
         if (!el) continue;
-        // offsetTop is relative to the scroll container (which has
-        // position:relative), so this is stable and viewport-independent.
-        if (el.offsetTop - THRESHOLD <= scrollTop) {
-          next = id;
-        }
+        if (el.offsetTop - THRESHOLD <= scrollTop) next = id;
       }
       if (next !== null) setActiveTabId(next);
     };
@@ -228,9 +132,7 @@ export function ItemEditPanel({
   const handleTabClick = (tabId: string) => {
     setActiveTabId(tabId);
     const el = sectionRefs.current[tabId];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const toggleLineItem = (
@@ -249,10 +151,12 @@ export function ItemEditPanel({
   return (
     <div className="flex flex-col h-full bg-white px-6">
       {/* Header: item name + quantity stepper */}
-      <div className="flex items-center justify-between pt-4 pb-4">
-        <h2 className="text-[25px] font-semibold text-[#101010] truncate flex-1 mr-4">
+      <div className="flex items-center gap-3 pt-4 pb-4">
+        <h2 className="text-[25px] font-semibold text-[#101010] truncate flex-1">
           {item.name}
         </h2>
+
+        {/* Quantity stepper */}
         <div className="flex items-center border border-[#dadada] rounded-full h-[56px] shrink-0">
           <button
             onClick={() => onQuantityChange(Math.max(1, draftQuantity - 1))}
@@ -301,7 +205,7 @@ export function ItemEditPanel({
             >
               {tab.label}
               {tab.alert && (
-                <span className="w-[8px] h-[8px] rounded-full bg-[#005ad9] shrink-0" />
+                <span className="w-[8px] h-[8px] rounded-full shrink-0 bg-[#005ad9]" />
               )}
             </button>
           ))}
@@ -309,20 +213,20 @@ export function ItemEditPanel({
       </div>
 
       {/* Scrollable content */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pb-6 relative">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto pb-6 relative"
+      >
         {/* Modifier groups */}
         {modifierGroups.map((group) => {
           const requirementUnmet = isGroupRequirementUnmet(group, draftModifiers);
-
           return (
             <div
               key={group.id}
-              ref={(el) => {
-                sectionRefs.current[group.id] = el;
-              }}
+              ref={(el) => { sectionRefs.current[group.id] = el; }}
               className="pt-2"
             >
-              <div className="flex items-center gap-2 min-h-[40px] py-2">
+              <div className="flex items-center gap-2 min-h-[40px] py-2 w-full">
                 <span className="text-[14px] font-medium text-[#101010]">
                   {group.name}
                 </span>
@@ -353,9 +257,7 @@ export function ItemEditPanel({
 
         {/* Note section */}
         <div
-          ref={(el) => {
-            sectionRefs.current["note"] = el;
-          }}
+          ref={(el) => { sectionRefs.current["note"] = el; }}
           className="pt-2"
         >
           <div className="flex items-center gap-2 min-h-[40px] py-2">
@@ -363,9 +265,7 @@ export function ItemEditPanel({
           </div>
           <textarea
             value={draftOptions.note}
-            onChange={(e) =>
-              onOptionsChange({ ...draftOptions, note: e.target.value })
-            }
+            onChange={(e) => onOptionsChange({ ...draftOptions, note: e.target.value })}
             placeholder="Add an item note..."
             rows={4}
             className={cn(
@@ -380,9 +280,7 @@ export function ItemEditPanel({
 
         {/* Options section */}
         <div
-          ref={(el) => {
-            sectionRefs.current["options"] = el;
-          }}
+          ref={(el) => { sectionRefs.current["options"] = el; }}
           className="pt-2"
         >
           {/* Fulfillment methods */}
@@ -472,31 +370,16 @@ export function ItemEditPanel({
           {item.description && (
             <div className="py-4 border-t border-[#f0f0f0]">
               <p className="text-[14px] font-semibold text-[#101010] mb-1">
-                Item description
+                About
               </p>
               <p className="text-[14px] text-[#888] leading-[22px]">
                 {item.description}
               </p>
             </div>
           )}
-
-          {/* Comp / Remove actions */}
-          <div className="flex gap-3 pt-4 pb-2 border-t border-[#f0f0f0]">
-            <button
-              onClick={onCompItem}
-              className="flex-1 h-[52px] rounded-full bg-[#f0f0f0] text-[15px] font-semibold text-[#101010]"
-            >
-              Comp item
-            </button>
-            <button
-              onClick={onRemoveItem}
-              className="flex-1 h-[52px] rounded-full bg-[#f0f0f0] text-[15px] font-semibold text-[#c0392b]"
-            >
-              Remove item
-            </button>
-          </div>
         </div>
       </div>
+
     </div>
   );
 }
