@@ -75,31 +75,46 @@ export function LandingPage() {
       />
 
       {/* Form on top so it’s visible and tappable */}
-      <div className="absolute inset-0 z-20 flex flex-col items-center px-6 pt-[calc(30vh-3rem)] text-center">
+      <div
+        className="absolute inset-0 z-20 flex flex-col items-center px-6 pt-[calc(30vh-3rem)] text-center"
+        style={{ color: "rgba(10, 10, 10, 0)" }}
+      >
         <div className="w-full max-w-md">
           <div className="opacity-60" style={{ color: LANDING_TEXT_COLOR }}>
-            <p className="mb-5 text-[14px] font-normal leading-normal">
+            <p
+              className="mb-5 text-[14px] font-normal leading-normal"
+              style={{ color: "rgba(255, 255, 255, 1)" }}
+            >
               Chris Liu
             </p>
             <div className="mb-10 max-w-md text-[14px] font-normal leading-normal">
-            <p className="mb-0">Chris is a product designer based in Brooklyn, NY. He's created digital experiences for Square, Meta, Google, etc.</p>
+            <p
+              className="mb-0"
+              style={{ color: "rgba(255, 255, 255, 1)" }}
+            >
+              Chris is a product designer based in Brooklyn, NY. He's created digital experiences for Square, Meta, Google, etc.
+            </p>
             <div className="mb-10 max-w-md text-[14px] font-normal leading-normal">
               </div><Link
               href="https://www.linkedin.com/in/chrisxliu/"
               target="_blank"
               rel="noopener noreferrer"
               className="block underline"
+              style={{ color: "rgba(0, 0, 0, 0.7)" }}
             >
               LinkedIn
             </Link>
             <Link
               href="mailto:chrisxliu@icloud.com"
               className="block underline"
+              style={{ color: "rgba(0, 0, 0, 0.7)" }}
             >
               Email
             </Link>
             <p className="mb-0">&nbsp;</p>
-            <p className="mb-0">Please contact for work samples.</p>
+            <p className="mb-0" style={{ color: "rgba(0, 0, 0, 0.7)" }}>
+              Please contact for work samples.
+            </p>
             </div>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col items-center gap-2">
