@@ -75,20 +75,16 @@ export function LandingPage() {
       />
 
       {/* Form on top so it’s visible and tappable */}
-      <div className="absolute inset-0 z-20 flex flex-col items-center px-6 pt-[calc(30vh-8rem)] text-center">
+      <div className="absolute inset-0 z-20 flex flex-col items-center px-6 pt-[calc(30vh-3rem)] text-center">
         <div className="w-full max-w-md">
           <div className="opacity-60" style={{ color: LANDING_TEXT_COLOR }}>
             <p className="mb-5 text-[14px] font-normal leading-normal">
               Chris Liu
             </p>
             <div className="mb-10 max-w-md text-[14px] font-normal leading-normal">
-            <p className="mb-0">Square, Senior Product Designer</p>
-            <p className="mb-0">2022-26</p>
-            <p className="mb-0">&nbsp;</p>
-            <p className="mb-0">Meta, Product Designer</p>
-            <p className="mb-0">2018-22</p>
-            <p className="mb-0">&nbsp;</p>
-            <Link
+            <p className="mb-0">Chris is a product designer based in Brooklyn, NY. He's created digital experiences for Square, Meta, Google, etc.</p>
+            <div className="mb-10 max-w-md text-[14px] font-normal leading-normal">
+              </div><Link
               href="https://www.linkedin.com/in/chrisxliu/"
               target="_blank"
               rel="noopener noreferrer"
