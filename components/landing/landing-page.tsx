@@ -103,11 +103,24 @@ export function LandingPage() {
             </div>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col items-center gap-2">
-            <div className="flex h-[45px] w-[200px] items-stretch overflow-hidden rounded-[8px] border-0 bg-black/20 focus-within:shadow-[0_0_0_1px_rgba(255,255,255,0.25),0_0_20px_6px_rgba(255,255,255,0.35),0_0_40px_12px_rgba(255,255,255,0.15)]">
+            <div
+              className="flex h-[45px] w-[200px] items-stretch overflow-hidden rounded-[8px] border-0 bg-black/20 focus-within:shadow-[0_0_0_1px_rgba(255,255,255,0.25),0_0_20px_6px_rgba(255,255,255,0.35),0_0_40px_12px_rgba(255,255,255,0.15)]"
+              style={
+                error
+                  ? {
+                      boxShadow:
+                        "0 0 0 1px rgba(255,104,44,0.25), 0 0 20px 6px rgba(255,104,44,0.35), 0 0 40px 12px rgba(255,104,44,0.15)",
+                    }
+                  : undefined
+              }
+            >
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                setPassword(e.target.value);
+                setError("");
+              }}
                 placeholder="Password"
                 className={`shrink-0 border-0 bg-transparent text-center text-[14px] text-white placeholder:text-white focus:outline-none ${password.length > 0 ? "w-[152px] pl-[48px] pr-2" : "w-full min-w-0 px-2"}`}
                 autoComplete="current-password"
@@ -134,7 +147,7 @@ export function LandingPage() {
               )}
             </div>
             {error && (
-              <p className="text-[14px]" style={{ color: LANDING_TEXT_COLOR }}>
+              <p className="text-[14px]" style={{ color: "#FF682C" }}>
                 {error}
               </p>
             )}
