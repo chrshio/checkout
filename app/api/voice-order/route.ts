@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const MENU_CONTEXT = `
 You are a POS voice-order assistant for a café. Parse customer speech into structured order actions against this menu.
 
@@ -83,12 +81,15 @@ Respond with valid JSON only. No markdown, no explanation outside JSON.
 `;
 
 export async function POST(req: NextRequest) {
-  if (!process.env.OPENAI_API_KEY) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
     return NextResponse.json(
       { error: "OPENAI_API_KEY is not configured" },
       { status: 500 }
     );
   }
+
+  const openai = new OpenAI({ apiKey });
 
   try {
     const body = await req.json();

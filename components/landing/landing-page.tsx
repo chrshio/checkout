@@ -53,7 +53,14 @@ export function LandingPage() {
             <div className="mb-10 max-w-md text-[14px] font-normal leading-normal">
             <p className="mb-0">Chris is a product designer based in Brooklyn, NY. He's created digital experiences for Square, Meta, Google, etc.</p>
             <div className="mb-10 max-w-md text-[14px] font-normal leading-normal">
-              </div><Link
+              </div>
+              <Link
+              href="https://www.figma.com/deck/Z93Kg5O9XsrqamdSS9Em6I"
+              className="block underline"
+            >
+              Work samples
+            </Link>
+              <Link
               href="https://www.linkedin.com/in/chrisxliu/"
               target="_blank"
               rel="noopener noreferrer"
@@ -67,8 +74,7 @@ export function LandingPage() {
             >
               Email
             </Link>
-            <p className="mb-0">&nbsp;</p>
-            <p className="mb-0">Please contact for work samples.</p>
+            
             </div>
           </div>
           <form onSubmit={handleSubmit} className="flex flex-col items-center gap-2">
