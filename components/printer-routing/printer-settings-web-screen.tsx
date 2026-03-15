@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { Search, Check, ChevronDown, ChevronUp, Users } from "lucide-react";
+import { Search, Check, ChevronDown, ChevronUp, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -258,22 +258,13 @@ export function PrinterSettingsWebScreen() {
                   <h2 className="font-semibold text-[25px] leading-8 text-[#101010]">
                     Printers
                   </h2>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setCreateGroupOpen(true)}
-                      className="flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 bg-[#101010] text-white rounded-full font-medium text-[15px] leading-6"
-                    >
-                      Create group
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNewPrinterOpen(true)}
-                      className="flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 bg-[#101010] text-white rounded-full font-medium text-[15px] leading-6"
-                    >
-                      Add device
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCreateGroupOpen(true)}
+                    className="flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 bg-[#101010] text-white rounded-full font-medium text-[15px] leading-6"
+                  >
+                    Create group
+                  </button>
                 </div>
 
                 <div className="flex flex-wrap gap-2 items-center">
@@ -550,6 +541,8 @@ function WebPrintersTable({
     });
   };
 
+  const gridCols = "24px 1fr 1fr 1fr 1fr 1fr";
+
   const renderPrinterRow = (printer: PrinterData, indented?: boolean) => {
     const printerStatus = computePrinterStatus(printer);
     const location = printer.location ?? "—";
@@ -559,13 +552,11 @@ function WebPrintersTable({
         key={printer.id}
         type="button"
         onClick={() => onRowClick(printer)}
-        className={cn(
-          "flex items-center gap-4 pr-2 py-4 border-b border-[#f0f0f0] w-full text-left",
-          indented && "pl-10"
-        )}
+        className="grid pr-2 py-4 border-b border-[#f0f0f0] w-full text-left gap-4 items-center"
+        style={{ gridTemplateColumns: gridCols }}
       >
         <div
-          className="w-6 shrink-0 flex items-center justify-center"
+          className="flex items-center justify-center"
           onClick={(e) => e.stopPropagation()}
         >
           <Checkbox
@@ -574,33 +565,38 @@ function WebPrintersTable({
             className="size-5 rounded border-2 border-[rgba(0,0,0,0.42)]"
           />
         </div>
-        <div className="flex-1 min-w-0 flex items-center gap-3">
+        <div
+          className={cn(
+            "min-w-0 flex items-center gap-3 text-left",
+            indented && "pl-6"
+          )}
+        >
           <img
             src="/printer-image.png"
             alt=""
             className="w-5 h-5 object-contain shrink-0"
             aria-hidden
           />
-          <p className="text-[15px] font-medium leading-[22px] text-[#101010] truncate">
+          <p className="text-[15px] font-medium leading-[22px] text-[#101010] truncate min-w-0">
             {printer.name}
           </p>
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 text-left">
           <p className="text-[13px] leading-[18px] text-[#666] truncate">
             {location}
           </p>
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 text-left">
           <p className="text-[13px] leading-[18px] text-[#666] truncate">
             {getPrintsSummary(printer)}
           </p>
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 text-left">
           <p className="text-[13px] leading-[18px] text-[#666] truncate">
             {printer.inPersonCategories || "—"}
           </p>
         </div>
-        <div className="flex-1 min-w-0 flex items-center">
+        <div className="min-w-0 flex items-center justify-start">
           <StatusPill variant={printerStatus} />
         </div>
       </button>
@@ -609,37 +605,40 @@ function WebPrintersTable({
 
   return (
     <div className="flex flex-col w-full">
-      <div className="flex items-center gap-4 min-h-12 pr-2 py-3 border-b border-[#959595] w-full">
-        <div className="w-6 shrink-0 flex items-center justify-center">
+      <div
+        className="grid min-h-12 pr-2 py-3 border-b border-[#959595] w-full gap-4 items-center"
+        style={{ gridTemplateColumns: gridCols }}
+      >
+        <div className="flex items-center justify-center">
           <Checkbox
             checked={allChecked ? true : someChecked ? "indeterminate" : false}
             onCheckedChange={toggleAll}
             className="size-5 rounded border-2 border-[rgba(0,0,0,0.42)]"
           />
         </div>
-        <div className="flex-1 min-w-0 flex items-center gap-1">
+        <div className="min-w-0 flex items-center gap-1 text-left">
           <span className="text-[14px] font-medium leading-[22px] text-[#101010]">
             Name
           </span>
           <ChevronDown className="w-4 h-4 text-[#666] shrink-0" aria-hidden />
         </div>
-        <div className="flex-1 min-w-0 flex items-center gap-1">
+        <div className="min-w-0 flex items-center gap-1 text-left">
           <span className="text-[14px] font-medium leading-[22px] text-[#101010]">
             Locations
           </span>
           <ChevronDown className="w-4 h-4 text-[#666] shrink-0" aria-hidden />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 text-left">
           <span className="text-[14px] font-medium leading-[22px] text-[#101010]">
             Prints
           </span>
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 text-left">
           <span className="text-[14px] font-medium leading-[22px] text-[#101010]">
             Categories
           </span>
         </div>
-        <div className="flex-1 min-w-0 flex items-center gap-1">
+        <div className="min-w-0 flex items-center gap-1 text-left">
           <span className="text-[14px] font-medium leading-[22px] text-[#101010]">
             Status
           </span>
@@ -659,37 +658,38 @@ function WebPrintersTable({
             <button
               type="button"
               onClick={() => toggleGroupExpanded(group.id)}
-              className="flex items-center gap-4 pr-2 py-4 border-b border-[#f0f0f0] w-full text-left hover:bg-black/[0.02]"
+              className="grid pr-2 py-4 border-b border-[#f0f0f0] w-full text-left hover:bg-black/[0.02] gap-4 items-center"
+              style={{ gridTemplateColumns: gridCols }}
             >
-              <div className="w-6 shrink-0 flex items-center justify-center">
+              <div className="flex items-center justify-center">
                 {isExpanded ? (
                   <ChevronUp className="w-5 h-5 text-[#666]" aria-hidden />
                 ) : (
                   <ChevronDown className="w-5 h-5 text-[#666]" aria-hidden />
                 )}
               </div>
-              <div className="flex-1 min-w-0 flex items-center gap-3">
-                <Users className="w-5 h-5 text-[#666] shrink-0" aria-hidden />
-                <p className="text-[15px] font-medium leading-[22px] text-[#101010] truncate">
+              <div className="min-w-0 flex items-center gap-3">
+                <Network className="w-5 h-5 text-[#666] shrink-0" aria-hidden />
+                <p className="text-[15px] font-medium leading-[22px] text-[#101010] truncate min-w-0">
                   {group.name} ({groupPrinters.length})
                 </p>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 text-left">
                 <p className="text-[13px] leading-[18px] text-[#666] truncate">
                   {locationCount} location{locationCount !== 1 ? "s" : ""}
                 </p>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 text-left">
                 <p className="text-[13px] leading-[18px] text-[#666] truncate">
                   {printsSummary}
                 </p>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 text-left">
                 <p className="text-[13px] leading-[18px] text-[#666] truncate">
                   {group.settings.inPersonCategories || "—"}
                 </p>
               </div>
-              <div className="flex-1 min-w-0 flex items-center">
+              <div className="min-w-0 flex items-center justify-start">
                 <StatusPill variant={worstStatus} />
               </div>
             </button>
