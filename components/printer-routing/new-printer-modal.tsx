@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X, ChevronLeft, Printer, Receipt, ChefHat, PrinterCheck } from "lucide-react";
+import Image from "next/image";
+import { X, ChevronLeft, Receipt, ChefHat, PrinterCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -70,7 +71,7 @@ export function NewPrinterModal({ open, onOpenChange, onDone }: NewPrinterModalP
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] max-w-[min(560px,calc(100%-2rem))] flex flex-col border-0 p-0 shadow-xl bg-white rounded-xl overflow-hidden"
+        className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[664px] max-w-[min(664px,calc(100%-2rem))] sm:max-w-[664px] flex flex-col border-0 p-0 shadow-xl bg-white rounded-xl overflow-hidden"
         showCloseButton={false}
       >
         {step === "setup" ? (
@@ -100,8 +101,8 @@ export function NewPrinterModal({ open, onOpenChange, onDone }: NewPrinterModalP
 
             {/* Printer image placeholder */}
             <div className="flex flex-col items-center gap-2 py-4">
-              <div className="w-[120px] h-[100px] rounded-lg bg-[#f5f5f5] flex items-center justify-center">
-                <Printer className="w-12 h-12 text-[#999]" />
+              <div className="w-[120px] h-[100px] rounded-lg bg-[#f5f5f5] flex items-center justify-center overflow-hidden">
+                <Image src="/printer-image.png" alt="Printer" width={60} height={50} className="w-[60px] h-[50px] object-contain" />
               </div>
               <p className="text-[15px] font-semibold text-[#101010]">Star Micronics TSP143IIIU</p>
               <p className="text-[13px] text-[#666]">USB, Receipt printer, 80mm thermal</p>

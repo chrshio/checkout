@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Minus, Plus } from "lucide-react";
 import type { CartItem, ComboDefinition, ComboSlotSelection } from "@/lib/pos-types";
+import { Stepper } from "@/components/ui/stepper";
 import type { MenuItem } from "@/lib/pos-types";
 import {
   type ModifierOption,
@@ -391,36 +391,7 @@ export function ItemEditPanel({
             <h2 className="text-[25px] font-semibold text-[#101010] truncate flex-1">
               {item.name}
             </h2>
-            <div className="flex items-center border border-[#dadada] rounded-full h-[56px] shrink-0">
-              <button
-                onClick={() => onQuantityChange(Math.max(1, draftQuantity - 1))}
-                disabled={draftQuantity <= 1}
-                className="flex items-center justify-center w-[56px] h-[56px] shrink-0 disabled:cursor-default"
-              >
-                <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[#f0f0f0]">
-                  <Minus
-                    className={cn(
-                      "w-4 h-4 transition-colors",
-                      draftQuantity <= 1 ? "text-[#c8c8c8]" : "text-[#101010]"
-                    )}
-                  />
-                </span>
-              </button>
-              <span
-                className="text-[16px] text-[#101010] text-center min-w-[28px]"
-                style={{ fontFeatureSettings: "'lnum' 1, 'tnum' 1" }}
-              >
-                {draftQuantity}
-              </span>
-              <button
-                onClick={() => onQuantityChange(draftQuantity + 1)}
-                className="flex items-center justify-center w-[56px] h-[56px] shrink-0"
-              >
-                <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[#f0f0f0]">
-                  <Plus className="w-4 h-4 text-[#101010]" />
-                </span>
-              </button>
-            </div>
+            <Stepper value={draftQuantity} onChange={onQuantityChange} min={1} />
           </>
         )}
       </div>

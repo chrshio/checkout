@@ -1,12 +1,5 @@
-import { IPadMock } from "@/components/pos/ipad-mock";
-import { PrinterSettingsScreen } from "@/components/printer-routing/printer-settings-screen";
+import { redirect } from "next/navigation";
 
 export default function PrinterRoutingPage() {
-  return (
-    <main className="min-h-screen bg-[#1a1a1a]">
-      <IPadMock>
-        <PrinterSettingsScreen />
-      </IPadMock>
-    </main>
-  );
+  redirect("/prototypes/printer-routing/main");
 }

@@ -83,7 +83,7 @@ export function EditSourcesModal({
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogContent
-        className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] max-w-[min(600px,calc(100%-2rem))] max-h-[calc(100%-4rem)] flex flex-col border-0 p-0 shadow-xl bg-white rounded-xl overflow-hidden"
+        className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[664px] max-w-[min(664px,calc(100%-2rem))] sm:max-w-[664px] max-h-[calc(100%-4rem)] flex flex-col border-0 p-0 shadow-xl bg-white rounded-xl overflow-hidden"
         showCloseButton={false}
       >
         <div className="flex flex-col px-8 py-6 gap-6 overflow-hidden">
@@ -162,7 +162,7 @@ export function EditSourcesModal({
                     i < filtered.length - 1 && "border-b border-black/5"
                   )}
                 >
-                  <div className="shrink-0 flex items-center justify-center p-2 rounded-[6px] bg-black/5">
+                  <div className="shrink-0 flex items-center justify-center p-2 rounded-full bg-black/5">
                     <Icon className="w-6 h-6 text-[#101010]" />
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col gap-0.5">

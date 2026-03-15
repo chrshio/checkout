@@ -130,6 +130,24 @@
   display: none;
 }
 
+/* Slide-in from right */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* Slide-out to right */
+@keyframes slide-out-right {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+.animate-slide-out-right {
+  animation: slide-out-right 0.25s cubic-bezier(0.55, 0, 0.75, 0.05) both;
+}
+
 /* Text link pattern: black with slightly more font weight (no blue) */
 @layer components {
   .text-link {

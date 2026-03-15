@@ -15,7 +15,8 @@ function variantShortLabel(item: PrototypeItem): string {
     fsr: "FSR",
     retail: "Retail",
     voice: "*Vision*",
-    main: "Main",
+    main: "POS",
+    web: "Dashboard",
   };
   return map[item.id] ?? item.name;
 }
@@ -224,8 +225,8 @@ export function PrototypeSelectorMenu({ children }: { children: React.ReactNode 
         </div>
       ) : null}
 
-      {/* iPad area */}
-      <div className="flex-1 min-h-0 relative overflow-hidden">
+      {/* Content area — z-0 so the left prototype selector (z-40) stays on top when sheets/dialogs open inside children */}
+      <div className="flex-1 min-h-0 relative z-0 overflow-hidden">
         {children}
       </div>
 
@@ -277,7 +278,7 @@ export function PrototypeSelectorMenu({ children }: { children: React.ReactNode 
               }}
             />
           )}
-          {leftHoverPillStyle && (
+          {leftHoverPillStyle && leftHoverIndex !== selectedProjectIndex && (
             <div
               className="absolute rounded-lg pointer-events-none transition-[top,height,left,width] duration-200 ease-out"
               style={{

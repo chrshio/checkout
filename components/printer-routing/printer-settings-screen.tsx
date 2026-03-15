@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Search, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBar } from "@/components/pos/status-bar";
@@ -8,16 +8,16 @@ import { BottomNavigation } from "@/components/pos/bottom-navigation";
 import type { NavItem } from "@/lib/pos-types";
 import { PrinterDetail } from "./printer-detail";
 import { NewPrinterModal } from "./new-printer-modal";
-import { EditCategoriesModal } from "./edit-categories-modal";
 import {
   type PrinterData,
   type PrinterStatus,
   computePrinterStatus,
   getPrintsSummary,
-  statusConfig,
   initialPrinters,
   defaultTicketAppearance,
 } from "@/lib/printer-data";
+import { getCategoriesShortText } from "@/lib/printer-categories-copy";
+import { StatusPill } from "@/components/ui/status-pill";
 
 const sidebarSections = [
   { id: "checkout", label: "Checkout", type: "heading" as const },
@@ -51,9 +51,9 @@ export function PrinterSettingsScreen() {
   const [printers, setPrinters] = useState<PrinterData[]>(initialPrinters);
   const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(null);
   const [newPrinterOpen, setNewPrinterOpen] = useState(false);
-  const [editCategoriesOpen, setEditCategoriesOpen] = useState(false);
-  const [categorySelection, setCategorySelection] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<ToastState>({ message: "", visible: false });
+  const [isDetailExiting, setIsDetailExiting] = useState(false);
+  const exitCallbackRef = useRef<(() => void) | null>(null);
 
   const showToast = useCallback((message: string) => {
     setToast({ message, visible: true });
@@ -72,19 +72,30 @@ export function PrinterSettingsScreen() {
     setView("detail");
   }, []);
 
-  const handleBackToList = useCallback(() => {
+  const exitDetail = useCallback((after: () => void) => {
+    exitCallbackRef.current = after;
+    setIsDetailExiting(true);
+  }, []);
+
+  const handleDetailAnimationEnd = useCallback(() => {
+    if (!isDetailExiting) return;
+    setIsDetailExiting(false);
     setView("list");
     setSelectedPrinterId(null);
-  }, []);
+    exitCallbackRef.current?.();
+    exitCallbackRef.current = null;
+  }, [isDetailExiting]);
+
+  const handleBackToList = useCallback(() => {
+    exitDetail(() => {});
+  }, [exitDetail]);
 
   const handleSavePrinter = useCallback(
     (updated: PrinterData) => {
       setPrinters((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      setView("list");
-      setSelectedPrinterId(null);
-      showToast(`Printer settings saved for ${updated.name}.`);
+      exitDetail(() => showToast(`Printer settings saved for ${updated.name}.`));
     },
-    [showToast]
+    [exitDetail, showToast]
   );
 
   const handleNewPrinterDone = useCallback(
@@ -118,14 +129,6 @@ export function PrinterSettingsScreen() {
     },
     [showToast]
   );
-
-  const handleEditCategories = useCallback(() => {
-    setEditCategoriesOpen(true);
-  }, []);
-
-  const handleSaveCategories = useCallback((ids: Set<string>) => {
-    setCategorySelection(ids);
-  }, []);
 
   return (
     <div className="relative flex flex-col h-full w-full bg-black">
@@ -197,15 +200,26 @@ export function PrinterSettingsScreen() {
           </div>
 
           {/* Right content area */}
-          <div className="flex-1 h-full min-w-0 overflow-x-hidden overflow-y-auto scrollbar-hide pt-0 pl-8 pr-8 pb-6 bg-white">
-            {view === "list" && <PrintersList printers={printers} onRowClick={handleRowClick} onConnectPrinter={() => setNewPrinterOpen(true)} />}
-            {view === "detail" && selectedPrinter && (
-              <PrinterDetail
-                printer={selectedPrinter}
-                onBack={handleBackToList}
-                onSave={handleSavePrinter}
-                onEditCategories={handleEditCategories}
-              />
+          <div className="flex-1 h-full min-w-0 relative overflow-hidden bg-white">
+            {/* List — always rendered underneath */}
+            <div className="h-full overflow-x-hidden overflow-y-auto scrollbar-hide pt-0 pl-8 pr-8 pb-6">
+              <PrintersList printers={printers} onRowClick={handleRowClick} onConnectPrinter={() => setNewPrinterOpen(true)} />
+            </div>
+
+            {/* Detail — slides in/out on top */}
+            {(view === "detail" || isDetailExiting) && selectedPrinter && (
+              <div
+                key={selectedPrinterId}
+                className={`absolute inset-0 bg-white overflow-x-hidden overflow-y-auto scrollbar-hide pt-0 pl-8 pr-8 pb-6 ${isDetailExiting ? "animate-slide-out-right" : "animate-slide-in-right"}`}
+                onAnimationEnd={handleDetailAnimationEnd}
+              >
+                <PrinterDetail
+                  printer={selectedPrinter}
+                  onBack={handleBackToList}
+                  onSave={handleSavePrinter}
+                  onEditCategories={() => {}}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -226,7 +240,6 @@ export function PrinterSettingsScreen() {
 
       {/* Modals */}
       <NewPrinterModal open={newPrinterOpen} onOpenChange={setNewPrinterOpen} onDone={handleNewPrinterDone} />
-      <EditCategoriesModal open={editCategoriesOpen} onOpenChange={setEditCategoriesOpen} selectedIds={categorySelection} onSave={handleSaveCategories} />
     </div>
   );
 }
@@ -285,7 +298,7 @@ function PrintersList({
 
           {/* Table */}
           <div className="flex flex-col w-full">
-            <div className="flex items-center gap-4 min-h-[48px] px-2 py-3 border-b border-[#959595]">
+            <div className="flex items-center gap-4 min-h-[48px] pr-2 py-3 border-b border-[#959595]">
               <div className="w-[200px] shrink-0">
                 <span className="text-[14px] font-medium leading-[22px] text-[#101010]">Name</span>
               </div>
@@ -302,15 +315,14 @@ function PrintersList({
 
             {printers.map((printer) => {
               const printerStatus = computePrinterStatus(printer);
-              const status = statusConfig[printerStatus];
               const prints = getPrintsSummary(printer);
-              const categories = printer.inPersonCategories || "—";
+              const categories = getCategoriesShortText(printer.inPersonCategoryIds) || printer.inPersonCategories || "—";
               return (
                 <button
                   key={printer.id}
                   type="button"
                   onClick={() => onRowClick(printer)}
-                  className="flex items-center gap-4 px-2 py-4 border-b border-[#f0f0f0] w-full text-left"
+                  className="flex items-center gap-4 pr-2 py-4 border-b border-[#f0f0f0] w-full text-left"
                 >
                   <div className="w-[200px] shrink-0">
                     <p className="text-[15px] font-medium leading-[22px] text-[#101010]">{printer.name}</p>
@@ -323,9 +335,7 @@ function PrintersList({
                     <p className="text-[13px] leading-[18px] text-[#666]">{categories}</p>
                   </div>
                   <div className="w-[120px] shrink-0 flex items-center justify-start">
-                    <span className={cn("shrink-0 inline-flex items-center rounded-full px-2 py-1 text-[13px] font-medium", status.bg, status.text)}>
-                      {status.label}
-                    </span>
+                    <StatusPill variant={printerStatus} />
                   </div>
                 </button>
               );

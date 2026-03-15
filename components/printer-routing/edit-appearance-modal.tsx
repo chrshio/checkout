@@ -79,7 +79,7 @@ export function EditAppearanceModal({
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogContent
-        className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] max-w-[min(600px,calc(100%-2rem))] flex flex-col border-0 p-0 shadow-xl bg-white rounded-xl overflow-hidden"
+        className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[664px] max-w-[min(664px,calc(100%-2rem))] sm:max-w-[664px] flex flex-col border-0 p-0 shadow-xl bg-white rounded-xl overflow-hidden"
         showCloseButton={false}
       >
         <div className="flex flex-col px-8 py-6 gap-6">

@@ -1,18 +1,21 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { ArrowLeft, MoreHorizontal, Pencil, Minus, Plus, Monitor, Smartphone, Tablet, Receipt, Tag, Code, MapPin, Barcode, AlertTriangle, AlertCircle } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, Pencil, Monitor, Smartphone, Tablet, Receipt, Tag, Code, MapPin, Barcode, AlertTriangle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Stepper } from "@/components/ui/stepper";
 import {
   type PrinterData,
   type PrinterStatus,
   type DeviceType,
   type TicketAppearance,
   computePrinterStatus,
-  statusConfig,
   locationDevices,
 } from "@/lib/printer-data";
+import { StatusPill } from "@/components/ui/status-pill";
+import { getCategoriesSubcopy, type CategoriesSubcopy } from "@/lib/printer-categories-copy";
 import { EditAppearanceModal } from "./edit-appearance-modal";
+import { EditCategoriesModal } from "./edit-categories-modal";
 import { EditSourcesModal } from "./edit-sources-modal";
 import { PaperSizeSheet } from "./paper-size-sheet";
 
@@ -35,8 +38,14 @@ const deviceIcon: Record<DeviceType, React.ComponentType<{ className?: string }>
 
 export function PrinterDetail({ printer, onBack, onSave, onEditCategories }: PrinterDetailProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
-  const [draft, setDraft] = useState<PrinterData>({ ...printer, sources: printer.sources.map((s) => ({ ...s })), ticketAppearance: { ...printer.ticketAppearance } });
+  const [draft, setDraft] = useState<PrinterData>({
+    ...printer,
+    sources: printer.sources.map((s) => ({ ...s })),
+    ticketAppearance: { ...printer.ticketAppearance },
+    inPersonCategoryIds: printer.inPersonCategoryIds ?? [],
+  });
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [editCategoriesOpen, setEditCategoriesOpen] = useState(false);
   const [editSourcesOpen, setEditSourcesOpen] = useState(false);
   const [paperSizeSheetOpen, setPaperSizeSheetOpen] = useState(false);
 
@@ -57,7 +66,6 @@ export function PrinterDetail({ printer, onBack, onSave, onEditCategories }: Pri
     JSON.stringify(draft) !== JSON.stringify(printer);
 
   const printerStatus = computePrinterStatus(draft);
-  const status = statusConfig[printerStatus];
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "details", label: "Details" },
@@ -137,9 +145,7 @@ export function PrinterDetail({ printer, onBack, onSave, onEditCategories }: Pri
               {draft.name}
             </h2>
             <Pencil className="w-4 h-4 text-[#999]" />
-            <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[13px] font-semibold", status.bg, status.text)}>
-              {status.label}
-            </span>
+            <StatusPill variant={printerStatus} />
           </div>
         </div>
 
@@ -196,7 +202,7 @@ export function PrinterDetail({ printer, onBack, onSave, onEditCategories }: Pri
         )}
 
         {/* Tabs */}
-        <div className={cn("flex items-center gap-6 border-b border-[#e5e5e5]", !isCollapsed && "mt-4")}>
+        <div className={cn("flex items-center gap-4 border-b border-[#e5e5e5]", !isCollapsed && "mt-6")}>
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -220,7 +226,7 @@ export function PrinterDetail({ printer, onBack, onSave, onEditCategories }: Pri
         <TicketSettingsTab
           draft={draft}
           updateDraft={updateDraft}
-          onEditCategories={onEditCategories}
+          onEditCategories={() => setEditCategoriesOpen(true)}
           onEditAppearance={() => setAppearanceOpen(true)}
         />
       )}
@@ -242,6 +248,15 @@ export function PrinterDetail({ printer, onBack, onSave, onEditCategories }: Pri
         onOpenChange={setAppearanceOpen}
         appearance={draft.ticketAppearance}
         onSave={handleSaveAppearance}
+      />
+      <EditCategoriesModal
+        open={editCategoriesOpen}
+        onOpenChange={setEditCategoriesOpen}
+        selectedIds={new Set(draft.inPersonCategoryIds ?? [])}
+        onSave={(ids) => {
+          updateDraft({ inPersonCategoryIds: Array.from(ids) });
+          setEditCategoriesOpen(false);
+        }}
       />
       <EditSourcesModal
         open={editSourcesOpen}
@@ -283,49 +298,29 @@ function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: (v: b
   );
 }
 
-function Stepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  return (
-    <div className="flex items-center border border-[#dadada] rounded-[21px] overflow-hidden shrink-0">
-      <button
-        type="button"
-        onClick={() => onChange(Math.max(1, value - 1))}
-        className="flex items-center justify-center w-10 h-10 text-[#666]"
-      >
-        <Minus className="w-4 h-4" />
-      </button>
-      <span className="w-10 text-center text-[15px] font-medium text-[#101010] tabular-nums">{value}</span>
-      <button
-        type="button"
-        onClick={() => onChange(value + 1)}
-        className="flex items-center justify-center w-10 h-10 text-[#666]"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
 function SettingsRow({
   label,
   subtitle,
   trailing,
   hideDivider,
+  largeGap,
 }: {
   label: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   trailing: React.ReactNode;
   hideDivider?: boolean;
+  largeGap?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between py-3 min-h-[48px]",
+        "flex items-start justify-between py-3 min-h-[48px]",
         !hideDivider && "border-b border-[#f0f0f0]"
       )}
     >
-      <div className="flex flex-col gap-0.5 min-w-0 flex-1 mr-4">
+      <div className={cn("flex flex-col min-w-0 flex-1 mr-4", largeGap ? "gap-4" : "gap-0.5")}>
         <span className="text-[15px] leading-[22px] font-medium text-[#101010]">{label}</span>
-        {subtitle && (
+        {subtitle != null && (
           <span className="text-[13px] leading-[18px] text-[#666]">{subtitle}</span>
         )}
       </div>
@@ -377,14 +372,16 @@ function SourceRow({
   primary,
   secondary,
   tertiary,
-  status,
+  statusVariant,
+  statusLabel,
   isLast,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   primary: string;
   secondary: string;
   tertiary?: string;
-  status?: { label: string; bg: string; text: string };
+  statusVariant?: "connected" | "offline";
+  statusLabel?: string;
   isLast?: boolean;
 }) {
   return (
@@ -394,7 +391,7 @@ function SourceRow({
         !isLast && "border-b border-black/5"
       )}
     >
-      <div className="shrink-0 flex items-center justify-center p-2 rounded-[6px] bg-black/5">
+      <div className="shrink-0 flex items-center justify-center p-2 rounded-full bg-black/5">
         <Icon className="w-6 h-6 text-[#101010]" />
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -404,10 +401,8 @@ function SourceRow({
           <span className="text-[14px] leading-[22px] text-[#666]">{tertiary}</span>
         )}
       </div>
-      {status && (
-        <span className={cn("shrink-0 inline-flex items-center rounded-full text-[14px] font-semibold px-3 py-1", status.bg, status.text)}>
-          {status.label}
-        </span>
+      {statusVariant && (
+        <StatusPill variant={statusVariant} label={statusLabel} />
       )}
     </div>
   );
@@ -424,7 +419,7 @@ function DetailCard({
 }) {
   return (
     <div className="flex gap-3 items-center shrink-0 w-[200px]">
-      <div className="shrink-0 flex items-center justify-center p-2 rounded-[6px] bg-black/5">
+      <div className="shrink-0 flex items-center justify-center p-2 rounded-full bg-black/5">
         <Icon className="w-6 h-6 text-[#101010]" />
       </div>
       <div className="flex flex-col min-w-0">
@@ -462,11 +457,8 @@ function DetailsTab({
                 primary={source.name}
                 secondary={source.deviceType}
                 tertiary={source.codeName}
-                status={
-                  source.isOnline
-                    ? { label: "Online", bg: "bg-[#e5ffee]", text: "text-[#007d2a]" }
-                    : { label: "Offline", bg: "bg-[#ffe5ea]", text: "text-[#bf0020]" }
-                }
+                statusVariant={source.isOnline ? "connected" : "offline"}
+                statusLabel={source.isOnline ? "Online" : "Offline"}
                 isLast={i === draft.sources.length - 1}
               />
             ))
@@ -487,7 +479,7 @@ function DetailsTab({
       <div className="flex flex-col w-full">
         <DetailsSectionHeader label="Paper size" onEdit={onEditPaperSize} />
         <div className="flex gap-4 items-center py-4">
-          <div className="shrink-0 flex items-center justify-center p-2 rounded-[6px] bg-black/5">
+          <div className="shrink-0 flex items-center justify-center p-2 rounded-full bg-black/5">
             <Receipt className="w-6 h-6 text-[#101010]" />
           </div>
           <span className="text-[16px] leading-6 font-medium text-[#101010]">{draft.paperSize}</span>
@@ -518,13 +510,39 @@ function DetailsTab({
 
 /* ------------------------------------------------------------------ */
 
+function renderCategoriesSubcopy(sub: CategoriesSubcopy): React.ReactNode {
+  if (sub.type === "all") return sub.text;
+  if (sub.type === "summary") return sub.text;
+  if (sub.type === "list") {
+    const visible = sub.categories.slice(0, 3);
+    const overflow = sub.categories.length - 3;
+    return (
+      <span className="flex flex-col gap-2 pl-4">
+        {visible.map((c) => (
+          <span key={c.name} className="flex flex-col gap-0">
+            <span className="font-medium text-[13px] leading-[18px] text-[#101010]">{c.name} ({c.itemCount} items)</span>
+            {c.itemSnippet && (
+              <span className="text-[13px] leading-[18px] text-[#666]">{c.itemSnippet}</span>
+            )}
+          </span>
+        ))}
+        {overflow > 0 && (
+          <span className="text-link text-[13px] font-medium">+{overflow} more</span>
+        )}
+      </span>
+    );
+  }
+  return null;
+}
+
+/** Appearance subcopy: selections toggled on, comma-separated, sentence case. All off → "Default ticket style". */
 function getAppearanceSummary(a: TicketAppearance): string {
   const parts: string[] = [];
-  if (a.compactTicket) parts.push("Compact");
-  if (a.singleItemPerTicket) parts.push("Single item");
-  if (a.combineIdenticalItems) parts.push("Combined");
+  if (a.compactTicket) parts.push("Compact ticket");
+  if (a.singleItemPerTicket) parts.push("Single item per ticket");
+  if (a.combineIdenticalItems) parts.push("Combined items");
   if (a.includeTopPadding) parts.push("Top padding");
-  if (a.printKitchenNames) parts.push("Kitchen names");
+  if (a.printKitchenNames) parts.push("Print kitchen names");
   return parts.length > 0 ? parts.join(", ") : "Default ticket style";
 }
 
@@ -554,7 +572,7 @@ function TicketSettingsTab({
           />
           <SettingsRow
             label="Number of copies"
-            trailing={<Stepper value={draft.receiptCopies} onChange={(v) => updateDraft({ receiptCopies: v })} />}
+            trailing={<Stepper size="Small" inRow value={draft.receiptCopies} onChange={(v) => updateDraft({ receiptCopies: v })} />}
             hideDivider
           />
         </>
@@ -571,8 +589,9 @@ function TicketSettingsTab({
       {draft.inPersonEnabled && (
         <>
           <SettingsRow
-            label="Categories"
-            subtitle={draft.inPersonCategories || "All categories, all items"}
+            label="Categories & items"
+            largeGap
+            subtitle={renderCategoriesSubcopy(getCategoriesSubcopy(draft.inPersonCategoryIds))}
             trailing={
               <button type="button" onClick={onEditCategories} className="text-link text-[15px]">
                 Edit
@@ -590,7 +609,7 @@ function TicketSettingsTab({
           />
           <SettingsRow
             label="Number of copies"
-            trailing={<Stepper value={1} onChange={() => {}} />}
+            trailing={<Stepper size="Small" inRow value={1} onChange={() => {}} />}
             hideDivider
           />
         </>

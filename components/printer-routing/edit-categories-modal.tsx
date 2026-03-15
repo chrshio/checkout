@@ -8,34 +8,11 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-interface CategoryItem {
-  id: string;
-  name: string;
-  itemCount: number;
-  children?: CategoryItem[];
-}
-
-const categories: CategoryItem[] = [
-  {
-    id: "beverage",
-    name: "Beverage",
-    itemCount: 14,
-    children: [
-      { id: "coffee", name: "Coffee", itemCount: 7 },
-      { id: "tea", name: "Tea", itemCount: 7 },
-    ],
-  },
-  { id: "specialty", name: "Specialty", itemCount: 6 },
-  { id: "kitchen", name: "Kitchen", itemCount: 6 },
-  { id: "uncategorized", name: "Uncategorized", itemCount: 6 },
-];
-
-function getAllIds(cats: CategoryItem[]): string[] {
-  return cats.flatMap((c) => [c.id, ...(c.children ? getAllIds(c.children) : [])]);
-}
-
-const allCategoryIds = getAllIds(categories);
+import {
+  type CategoryItem,
+  printerCategories as categories,
+  allPrinterCategoryIds as allCategoryIds,
+} from "@/lib/printer-categories-copy";
 
 interface EditCategoriesModalProps {
   open: boolean;
@@ -113,7 +90,7 @@ export function EditCategoriesModal({ open, onOpenChange, selectedIds, onSave }:
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogContent
-        className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] max-w-[min(560px,calc(100%-2rem))] max-h-[calc(100%-4rem)] flex flex-col border-0 p-0 shadow-xl bg-white rounded-xl overflow-hidden"
+        className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[664px] max-w-[min(664px,calc(100%-2rem))] sm:max-w-[664px] max-h-[calc(100%-4rem)] flex flex-col border-0 p-0 shadow-xl bg-white rounded-xl overflow-hidden"
         showCloseButton={false}
       >
         <div className="flex flex-col p-6 gap-5 overflow-hidden">

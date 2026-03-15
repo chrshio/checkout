@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { AlertCircle, CheckCircle, Minus, Plus, X } from "lucide-react";
+import { AlertCircle, CheckCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Stepper } from "@/components/ui/stepper";
 import { StatusBar } from "./status-bar";
 import { MenuGrid } from "./menu-grid";
 import { ItemEditPanel, type DraftItemOptions } from "./item-edit-panel";
@@ -474,48 +475,11 @@ export function POSScreenVariantA() {
                   <h2 className="min-w-0 flex-1 text-[19px] font-semibold text-[#101010] truncate">
                     {editingItem?.name ?? addingItem?.name ?? ""}
                   </h2>
-                  <div className="flex items-center border border-[#dadada] rounded-full h-[56px] shrink-0">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        editingItem
-                          ? setDraftQuantity((q) => Math.max(1, q - 1))
-                          : setAddDraftQuantity((q) => Math.max(1, q - 1))
-                      }
-                      disabled={editingItem ? draftQuantity <= 1 : addDraftQuantity <= 1}
-                      className="flex items-center justify-center w-[56px] h-[56px] shrink-0 disabled:cursor-default"
-                    >
-                      <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[#f0f0f0]">
-                        <Minus
-                          className={cn(
-                            "w-4 h-4 transition-colors",
-                            (editingItem ? draftQuantity <= 1 : addDraftQuantity <= 1)
-                              ? "text-[#c8c8c8]"
-                              : "text-[#101010]"
-                          )}
-                        />
-                      </span>
-                    </button>
-                    <span
-                      className="text-[16px] text-[#101010] text-center min-w-[28px]"
-                      style={{ fontFeatureSettings: "'lnum' 1, 'tnum' 1" }}
-                    >
-                      {editingItem ? draftQuantity : addDraftQuantity}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        editingItem
-                          ? setDraftQuantity((q) => q + 1)
-                          : setAddDraftQuantity((q) => q + 1)
-                      }
-                      className="flex items-center justify-center w-[56px] h-[56px] shrink-0"
-                    >
-                      <span className="w-6 h-6 flex items-center justify-center rounded-full bg-[#f0f0f0]">
-                        <Plus className="w-4 h-4 text-[#101010]" />
-                      </span>
-                    </button>
-                  </div>
+                  <Stepper
+                    value={editingItem ? draftQuantity : addDraftQuantity}
+                    onChange={editingItem ? setDraftQuantity : setAddDraftQuantity}
+                    min={1}
+                  />
                   <button
                     type="button"
                     onClick={() => (editingItem ? handleEditDone() : handleAddAttempt())}
