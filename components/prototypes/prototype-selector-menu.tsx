@@ -207,6 +207,21 @@ export function PrototypeSelectorMenu({ children }: { children: React.ReactNode 
 
   return (
     <div className="h-screen overflow-hidden relative flex flex-col bg-[#1a1a1a]">
+      {/* Top-left: Portfolio credit — z-30 so above variant bar (z-10) and clickable */}
+      <div className="absolute left-4 top-4 z-30 text-xs text-white/40 sm:left-6 sm:top-6 md:left-8 md:top-8">
+        Design prototypes generated with AI. <br />
+        For portfolio presentation, go{" "}
+        <a
+          href="https://www.figma.com/deck/Z93Kg5O9XsrqamdSS9Em6I"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-white/60"
+        >
+          here
+        </a>
+        .
+      </div>
+
       {/* Top: Variant selector – in flow when height >= 950px; when height < 950px, hover top edge to reveal */}
       {showVariantSelector && hasVariantSelector ? (
         <div className="flex-shrink-0 relative">{variantSelectorBar}</div>

@@ -19,18 +19,6 @@ export function IPadMock({ children, fillContainer = false }: IPadMockProps) {
       <div
         className={`relative flex w-full items-center justify-center bg-[#1a1a1a] p-4 sm:p-6 md:p-8 ${fillContainer ? "min-h-0 h-full" : "min-h-screen"}`}
       >
-        <div className="absolute left-4 top-4 z-10 text-xs text-white/40 sm:left-6 sm:top-6 md:left-8 md:top-8">
-          Design prototypes generated with AI. <br />For portfolio presentation, go{" "}
-          <a
-            href="https://www.figma.com/deck/Z93Kg5O9XsrqamdSS9Em6I"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-white/60"
-          >
-            here
-          </a>
-          .
-        </div>
         {/* iPad device frame - scales responsively */}
         <div className="relative w-full max-w-[1100px] aspect-[4/3]" style={{ maxHeight: "calc(100vh - 64px)" }}>
           {/* iPad outer bezel */}
