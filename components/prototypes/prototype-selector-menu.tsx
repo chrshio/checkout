@@ -4,7 +4,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { projects, type PrototypeItem } from "@/lib/prototypes-config";
-import { lastUpdated } from "@/lib/last-updated";
 
 const VARIANT_SELECTOR_MIN_HEIGHT = 950;
 
@@ -220,12 +219,6 @@ export function PrototypeSelectorMenu({ children }: { children: React.ReactNode 
           here
         </a>
         .
-      </div>
-
-      {/* Top-right: Last updated — same style and z-30 */}
-      <div className="absolute right-4 top-4 z-30 text-right text-xs text-white/40 sm:right-6 sm:top-6 md:right-8 md:top-8">
-        Last updated by Chris <br />
-        at {lastUpdated ?? "—"}
       </div>
 
       {/* Top: Variant selector – in flow when height >= 950px; when height < 950px, hover top edge to reveal */}
