@@ -17,8 +17,11 @@ export function IPadMock({ children, fillContainer = false }: IPadMockProps) {
       value={{ containerRef: screenRef, contained: true }}
     >
       <div
-        className={`flex w-full items-center justify-center bg-[#1a1a1a] p-4 sm:p-6 md:p-8 ${fillContainer ? "min-h-0 h-full" : "min-h-screen"}`}
+        className={`relative flex w-full items-center justify-center bg-[#1a1a1a] p-4 sm:p-6 md:p-8 ${fillContainer ? "min-h-0 h-full" : "min-h-screen"}`}
       >
+        <p className="absolute left-4 top-4 z-10 text-xs text-white/40 sm:left-6 sm:top-6 md:left-8 md:top-8">
+        Design prototypes generated with AI.
+        </p>
         {/* iPad device frame - scales responsively */}
         <div className="relative w-full max-w-[1100px] aspect-[4/3]" style={{ maxHeight: "calc(100vh - 64px)" }}>
           {/* iPad outer bezel */}

@@ -98,7 +98,7 @@ export function EditAppearanceModal({
               onClick={handleSave}
               disabled={!hasChanges}
               className={cn(
-                "flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-full",
+                "flex items-center justify-center min-h-[48px] px-5 py-2.5 rounded-full",
                 hasChanges
                   ? "bg-[#101010] text-white"
                   : "bg-[#f0f0f0] text-[#999] cursor-not-allowed"

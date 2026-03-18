@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useLayoutEffect } from "react";
-import { X, Monitor, Smartphone, Tablet, AlertTriangle, Pencil, FileText, FolderOpen, Palette, ChevronDown } from "lucide-react";
+import { X, Monitor, Smartphone, Tablet, AlertTriangle, AlertCircle, Pencil, FileText, FolderOpen, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Stepper } from "@/components/ui/stepper";
 import {
@@ -11,10 +11,11 @@ import {
   type TicketAppearance,
   computePrinterStatus,
   getPrintsSummaryFromSettings,
-  locationDevices,
+  getDevicesForLocation,
+  CURRENT_LOCATION_NAME,
 } from "@/lib/printer-data";
 import { StatusPill } from "@/components/ui/status-pill";
-import { getCategoriesSubcopy, type CategoriesSubcopy } from "@/lib/printer-categories-copy";
+import { getCategoriesSubcopy, getCategoriesShortText, type CategoriesSubcopy } from "@/lib/printer-categories-copy";
 import { EditAppearanceModal } from "./edit-appearance-modal";
 import { EditCategoriesModal } from "./edit-categories-modal";
 import { EditSourcesModal } from "./edit-sources-modal";
@@ -43,7 +44,7 @@ function renderCategoriesSubcopy(sub: CategoriesSubcopy): React.ReactNode {
           </span>
         ))}
         {overflow > 0 && (
-          <span className="text-link text-[14px] font-medium">+{overflow} more</span>
+          <span className="text-[14px] font-medium text-[#101010] underline">+{overflow} more</span>
         )}
       </span>
     );
@@ -51,15 +52,19 @@ function renderCategoriesSubcopy(sub: CategoriesSubcopy): React.ReactNode {
   return null;
 }
 
-/** Appearance subcopy: selections toggled on, comma-separated, sentence case. All off → "Default ticket style". */
+const APPEARANCE_LABELS: { key: keyof TicketAppearance; label: string }[] = [
+  { key: "compactTicket", label: "Compact ticket" },
+  { key: "singleItemPerTicket", label: "Single item per ticket" },
+  { key: "combineIdenticalItems", label: "Combine identical items" },
+  { key: "includeTopPadding", label: "Include top padding" },
+  { key: "printKitchenNames", label: "Print kitchen names" },
+];
+
+/** Summary at the top; only list settings that are on. */
 function getAppearanceSummary(a: TicketAppearance): string {
-  const parts: string[] = [];
-  if (a.compactTicket) parts.push("Compact ticket");
-  if (a.singleItemPerTicket) parts.push("Single item per ticket");
-  if (a.combineIdenticalItems) parts.push("Combined items");
-  if (a.includeTopPadding) parts.push("Top padding");
-  if (a.printKitchenNames) parts.push("Print kitchen names");
-  return parts.length > 0 ? parts.join(", ") : "Default ticket style";
+  const onLabels = APPEARANCE_LABELS.filter((row) => a[row.key]).map((row) => row.label);
+  if (onLabels.length === 0) return "Default ticket settings";
+  return "Default ticket settings. " + onLabels.join(", ") + ".";
 }
 
 interface PrinterDetailWebProps {
@@ -68,6 +73,10 @@ interface PrinterDetailWebProps {
   onBack: () => void;
   onSave: (printer: PrinterData) => void;
   onEditCategories: () => void;
+  /** When the user taps "Edit printer group", open the edit group page (sheet) with this group. */
+  onEditPrinterGroup?: (group: PrinterGroup) => void;
+  /** When the user taps "Remove from group", remove this printer from its group. */
+  onRemoveFromGroup?: () => void;
 }
 
 export function PrinterDetailWeb({
@@ -76,15 +85,21 @@ export function PrinterDetailWeb({
   onBack,
   onSave,
   onEditCategories,
+  onEditPrinterGroup,
+  onRemoveFromGroup,
 }: PrinterDetailWebProps) {
   const [draft, setDraft] = useState<PrinterData>({
     ...printer,
     sources: printer.sources.map((s) => ({ ...s })),
     ticketAppearance: { ...printer.ticketAppearance },
     inPersonCategoryIds: printer.inPersonCategoryIds ?? [],
+    onlineTicketAppearance: printer.onlineTicketAppearance ? { ...printer.onlineTicketAppearance } : undefined,
+    onlineCopies: printer.onlineCopies ?? 1,
   });
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [editCategoriesOpen, setEditCategoriesOpen] = useState(false);
+  const [editCategoriesTarget, setEditCategoriesTarget] = useState<"inPerson" | "online" | null>(null);
+  const [editAppearanceTarget, setEditAppearanceTarget] = useState<"inPerson" | "online" | null>(null);
   const [editSourcesOpen, setEditSourcesOpen] = useState(false);
   const [paperSizeSheetOpen, setPaperSizeSheetOpen] = useState(false);
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
@@ -108,8 +123,11 @@ export function PrinterDetailWeb({
   }, []);
 
   const handleSaveSources = useCallback((selectedIds: Set<string>) => {
-    const newSources = locationDevices.filter((d) => selectedIds.has(d.id));
-    setDraft((prev) => ({ ...prev, sources: newSources }));
+    setDraft((prev) => {
+      const location = prev.location ?? CURRENT_LOCATION_NAME;
+      const devices = getDevicesForLocation(location);
+      return { ...prev, sources: devices.filter((d) => selectedIds.has(d.id)) };
+    });
   }, []);
 
   const hasChanges = JSON.stringify(draft) !== JSON.stringify(printer);
@@ -143,7 +161,7 @@ export function PrinterDetailWeb({
                 "flex items-center justify-center gap-2 min-h-[48px] px-5 py-2.5 rounded-full font-medium text-[15px] leading-6 shrink-0",
                 hasChanges
                   ? "bg-[#101010] text-white"
-                  : "bg-[#f0f0f0] text-[#666] cursor-not-allowed"
+                  : "bg-[#f0f0f0] text-[#101010] cursor-not-allowed"
               )}
             >
               Save
@@ -168,7 +186,7 @@ export function PrinterDetailWeb({
                   "flex items-center justify-center gap-2 min-h-[48px] px-5 py-2.5 rounded-full font-medium text-[15px] leading-6 shrink-0",
                   hasChanges
                     ? "bg-[#101010] text-white"
-                    : "bg-[#f0f0f0] text-[#666] cursor-not-allowed"
+                    : "bg-[#f0f0f0] text-[#101010] cursor-not-allowed"
                 )}
               >
                 Save
@@ -226,23 +244,16 @@ export function PrinterDetailWeb({
         <div className="flex w-[1032px] max-w-full min-w-0 gap-8 mx-auto">
           {group ? (
             <>
-              {/* Left: Name, Printer group, Group settings (read-only) */}
+              {/* Left: Group settings (read-only) */}
               <div className="min-w-0 flex-1 flex flex-col gap-6">
-                <div className="flex flex-col gap-4 pt-4 pb-4 px-6 rounded-2xl border border-black/10 bg-white">
-                  <label className="text-[14px] font-medium leading-[22px] text-[#101010]">Name</label>
-                  <p className="text-[15px] leading-[22px] text-[#101010]">{draft.name}</p>
-                </div>
-                <div className="flex flex-col gap-4 pt-4 pb-4 px-6 rounded-2xl border border-black/10 bg-white">
-                  <label className="text-[14px] font-medium leading-[22px] text-[#101010]">Printer group</label>
-                  <div className="flex items-center gap-2 min-h-[44px] px-3 py-2 rounded-[6px] border border-black/15 text-[15px] leading-[22px] text-[#101010]">
-                    <span className="flex-1">{group.name}</span>
-                    <ChevronDown className="w-4 h-4 text-[#666] shrink-0" />
-                  </div>
-                </div>
                 <div className="flex flex-col gap-4 p-6 rounded-2xl border border-black/10 bg-white">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-[19px] leading-[26px] text-[#101010]">Group settings</h3>
-                    <button type="button" className="text-[14px] font-semibold text-[#101010] underline">
+                    <button
+                      type="button"
+                      onClick={() => onEditPrinterGroup?.(group)}
+                      className="text-[14px] font-semibold text-[#101010] underline"
+                    >
                       Edit printer group
                     </button>
                   </div>
@@ -259,7 +270,7 @@ export function PrinterDetailWeb({
                     <div className="flex items-center gap-3">
                       <FolderOpen className="w-5 h-5 text-[#666] shrink-0" />
                       <span className="text-[15px] leading-[22px] text-[#101010]">
-                        {group.settings.inPersonCategories || "—"}
+                        {getCategoriesShortText(group.settings.inPersonCategoryIds) || "—"}
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -269,6 +280,15 @@ export function PrinterDetailWeb({
                       </span>
                     </div>
                   </div>
+                  {onRemoveFromGroup && (
+                    <button
+                      type="button"
+                      onClick={onRemoveFromGroup}
+                      className="mt-4 w-full flex items-center justify-center min-h-[48px] px-4 py-3 rounded-full font-medium text-[15px] leading-6 bg-[#f0f0f0] text-[#bf0020]"
+                    >
+                      Remove printer from group
+                    </button>
+                  )}
                 </div>
               </div>
               {/* Right: Sources (read-only) + Printer details */}
@@ -276,7 +296,11 @@ export function PrinterDetailWeb({
                 <div className="flex flex-col gap-4 p-6 rounded-2xl border border-black/10 bg-white">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-[19px] leading-[26px] text-[#101010]">Sources</h3>
-                    <button type="button" className="text-[14px] font-semibold text-[#101010] underline">
+                    <button
+                      type="button"
+                      onClick={() => onEditPrinterGroup?.(group)}
+                      className="text-[14px] font-semibold text-[#101010] underline"
+                    >
                       Edit printer group
                     </button>
                   </div>
@@ -327,8 +351,22 @@ export function PrinterDetailWeb({
                 <WebSettingsColumn
                   draft={draft}
                   updateDraft={updateDraft}
-                  onEditCategories={() => setEditCategoriesOpen(true)}
-                  onEditAppearance={() => setAppearanceOpen(true)}
+                  onEditCategories={() => {
+                    setEditCategoriesTarget("inPerson");
+                    setEditCategoriesOpen(true);
+                  }}
+                  onEditAppearance={() => {
+                    setEditAppearanceTarget("inPerson");
+                    setAppearanceOpen(true);
+                  }}
+                  onEditOnlineCategories={() => {
+                    setEditCategoriesTarget("online");
+                    setEditCategoriesOpen(true);
+                  }}
+                  onEditOnlineAppearance={() => {
+                    setEditAppearanceTarget("online");
+                    setAppearanceOpen(true);
+                  }}
                 />
               </div>
 
@@ -350,22 +388,50 @@ export function PrinterDetailWeb({
 
       <EditAppearanceModal
         open={appearanceOpen}
-        onOpenChange={setAppearanceOpen}
-        appearance={draft.ticketAppearance}
-        onSave={handleSaveAppearance}
+        onOpenChange={(open) => {
+          if (!open) setEditAppearanceTarget(null);
+          setAppearanceOpen(open);
+        }}
+        appearance={
+          editAppearanceTarget === "online"
+            ? (draft.onlineTicketAppearance ?? draft.ticketAppearance)
+            : draft.ticketAppearance
+        }
+        onSave={(appearance) => {
+          if (editAppearanceTarget === "online") {
+            updateDraft({ onlineTicketAppearance: appearance });
+          } else {
+            updateDraft({ ticketAppearance: appearance });
+          }
+          setAppearanceOpen(false);
+          setEditAppearanceTarget(null);
+        }}
       />
       <EditCategoriesModal
         open={editCategoriesOpen}
-        onOpenChange={setEditCategoriesOpen}
-        selectedIds={new Set(draft.inPersonCategoryIds ?? [])}
+        onOpenChange={(open) => {
+          if (!open) setEditCategoriesTarget(null);
+          setEditCategoriesOpen(open);
+        }}
+        selectedIds={new Set(
+          editCategoriesTarget === "online"
+            ? (draft.onlineCategoryIds ?? draft.inPersonCategoryIds ?? [])
+            : (draft.inPersonCategoryIds ?? [])
+        )}
         onSave={(ids) => {
-          updateDraft({ inPersonCategoryIds: Array.from(ids) });
+          if (editCategoriesTarget === "online") {
+            updateDraft({ onlineCategoryIds: Array.from(ids) });
+          } else {
+            updateDraft({ inPersonCategoryIds: Array.from(ids) });
+          }
           setEditCategoriesOpen(false);
+          setEditCategoriesTarget(null);
         }}
       />
       <EditSourcesModal
         open={editSourcesOpen}
         onOpenChange={setEditSourcesOpen}
+        location={draft.location ?? CURRENT_LOCATION_NAME}
         selectedIds={new Set(draft.sources.map((s) => s.id))}
         onSave={handleSaveSources}
       />
@@ -412,12 +478,20 @@ function WebSettingsColumn({
   updateDraft,
   onEditCategories,
   onEditAppearance,
+  onEditOnlineCategories,
+  onEditOnlineAppearance,
 }: {
   draft: PrinterData;
   updateDraft: (p: Partial<PrinterData>) => void;
   onEditCategories: () => void;
   onEditAppearance: () => void;
+  onEditOnlineCategories: () => void;
+  onEditOnlineAppearance: () => void;
 }) {
+  const onlineCategories = draft.onlineCategoryIds ?? draft.inPersonCategoryIds;
+  const onlineAppearance = draft.onlineTicketAppearance ?? draft.ticketAppearance;
+  const onlineCopies = draft.onlineCopies ?? 1;
+
   return (
     <div className="flex flex-col gap-6">
       <div className={settingsCardClass}>
@@ -444,20 +518,25 @@ function WebSettingsColumn({
         >
           {draft.inPersonEnabled && (
             <>
-              <Row
-                label="Categories & items"
-                largeGap
-                subtitle={renderCategoriesSubcopy(getCategoriesSubcopy(draft.inPersonCategoryIds))}
-                trailing={
-                  <button type="button" onClick={onEditCategories} className="text-link text-[14px] font-semibold">
-                    Edit
-                  </button>
-                }
-              />
+              {(() => {
+                const categoriesSubcopy = getCategoriesSubcopy(draft.inPersonCategoryIds);
+                const isSimple = categoriesSubcopy.type !== "list";
+                return (
+                  <Row
+                    label="Categories & items"
+                    largeGap={!isSimple}
+                    subtitle={renderCategoriesSubcopy(categoriesSubcopy)}
+                    trailing={
+                      <button type="button" onClick={onEditCategories} className="text-link text-[14px] font-semibold">
+                        Edit
+                      </button>
+                    }
+                  />
+                );
+              })()}
               <Row
                 label="Appearance"
                 subtitle={getAppearanceSummary(draft.ticketAppearance)}
-                centerTrailing
                 trailing={
                   <button type="button" onClick={onEditAppearance} className="text-link text-[14px] font-semibold">
                     Edit
@@ -473,7 +552,12 @@ function WebSettingsColumn({
       <div className={settingsCardClass}>
         <SectionBlock
           title="Online and kiosk order tickets"
-          trailing={<ToggleSwitch enabled={draft.onlineEnabled} onChange={(v) => updateDraft({ onlineEnabled: v })} />}
+          trailing={
+            <ToggleSwitch
+              enabled={draft.onlineEnabled}
+              onChange={(v) => updateDraft(v ? { onlineEnabled: true, sameAsInPerson: true } : { onlineEnabled: false })}
+            />
+          }
         >
           {draft.onlineEnabled && (
             <>
@@ -496,27 +580,42 @@ function WebSettingsColumn({
               />
               {!draft.sameAsInPerson && (
                 <>
-                  <Row
-                    label="Categories & items"
-                    largeGap
-                    subtitle={renderCategoriesSubcopy(getCategoriesSubcopy(draft.inPersonCategoryIds))}
-                    trailing={
-                      <button type="button" onClick={onEditCategories} className="text-link text-[14px] font-semibold">
-                        Edit
-                      </button>
-                    }
-                  />
+                  {(() => {
+                    const categoriesSubcopy = getCategoriesSubcopy(onlineCategories);
+                    const isSimple = categoriesSubcopy.type !== "list";
+                    return (
+                      <Row
+                        label="Categories & items"
+                        largeGap={!isSimple}
+                        subtitle={renderCategoriesSubcopy(categoriesSubcopy)}
+                        trailing={
+                          <button type="button" onClick={onEditOnlineCategories} className="text-link text-[14px] font-semibold">
+                            Edit
+                          </button>
+                        }
+                      />
+                    );
+                  })()}
                   <Row
                     label="Appearance"
-                    subtitle={getAppearanceSummary(draft.ticketAppearance)}
-                    centerTrailing
+                    subtitle={getAppearanceSummary(onlineAppearance)}
                     trailing={
-                      <button type="button" onClick={onEditAppearance} className="text-link text-[14px] font-semibold">
+                      <button type="button" onClick={onEditOnlineAppearance} className="text-link text-[14px] font-semibold">
                         Edit
                       </button>
                     }
                   />
-                  <Row label="Number of copies" trailing={<Stepper size="Small" inRow value={1} onChange={() => {}} />} />
+                  <Row
+                    label="Number of copies"
+                    trailing={
+                      <Stepper
+                        size="Small"
+                        inRow
+                        value={onlineCopies}
+                        onChange={(v) => updateDraft({ onlineCopies: v })}
+                      />
+                    }
+                  />
                 </>
               )}
             </>
@@ -579,16 +678,15 @@ function Row({
   subtitle,
   trailing,
   largeGap,
-  centerTrailing,
 }: {
   label: string;
   subtitle?: React.ReactNode;
   trailing: React.ReactNode;
+  /** When true, use extra gap and top-align row (e.g. multi-line Categories list). Otherwise left/right are vertically centered. */
   largeGap?: boolean;
-  centerTrailing?: boolean;
 }) {
   return (
-    <div className={cn("flex justify-between py-4 border-b border-black/5 last:border-b-0", centerTrailing ? "items-center" : "items-start")}>
+    <div className={cn("flex justify-between py-4 border-b border-black/5 last:border-b-0", largeGap ? "items-start" : "items-center")}>
       <div className={cn("flex flex-col min-w-0 flex-1 mr-4", largeGap ? "gap-4" : "gap-0")}>
         <span className="text-[16px] font-medium text-[#101010]">{label}</span>
         {subtitle != null && <span className="text-[14px] leading-[22px] text-[#666]">{subtitle}</span>}
@@ -643,7 +741,7 @@ function WebSourcesCard({
         </div>
       ) : (
         <div className="flex gap-3 items-start py-2">
-          <AlertTriangle className="w-6 h-6 text-[#f25b3d] shrink-0" />
+          <AlertCircle className="w-6 h-6 text-[#bf0020] shrink-0" />
           <span className="text-[16px] leading-6 font-medium text-[#101010]">
             No order sources connected
           </span>
@@ -660,7 +758,8 @@ function WebPrinterDetailsCard({
   draft: PrinterData;
   onEditPaperSize: () => void;
 }) {
-  const isNetworkConnected = draft.connection === "Ethernet" && draft.ipAddress !== "—";
+  const printerStatus = computePrinterStatus(draft);
+  const isNetworkConnected = printerStatus === "connected" || printerStatus === "ready";
   return (
     <div className="flex flex-col gap-4 p-6 rounded-2xl border border-black/10 bg-white">
       <h3 className="font-semibold text-[19px] leading-[26px] text-[#101010]">Printer details</h3>
@@ -672,7 +771,7 @@ function WebPrinterDetailsCard({
             label={isNetworkConnected ? "Connected" : "Disconnected"}
           />
         </div>
-        <DetailRow label="Location" value={draft.location ?? "Oakland"} />
+        <DetailRow label="Location" value={draft.location ?? CURRENT_LOCATION_NAME} />
         <DetailRow label="Type" value={draft.paperType === "Thermal" ? "Receipt printer" : "Impact printer"} />
         <DetailRow label="Device ID" value={draft.serialNumber} />
         <DetailRow label="Model" value={draft.model} />

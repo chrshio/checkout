@@ -6,6 +6,22 @@ alwaysApply: false
 
 # iPad Prototype UX Conventions
 
+## Back button icon
+
+Use the **left arrow** (`ArrowLeft` from `lucide-react`) for back buttons, not the chevron.
+
+```tsx
+// ❌ BAD — chevron for back
+import { ChevronLeft } from "lucide-react";
+<button onClick={onBack}><ChevronLeft className="w-5 h-5" /></button>
+
+// ✅ GOOD — left arrow for back
+import { ArrowLeft } from "lucide-react";
+<button onClick={onBack}><ArrowLeft className="w-5 h-5 text-[#101010]" /></button>
+```
+
+Use `ChevronLeft` / `ChevronRight` only for in-context navigation (e.g. calendar month, pagination), not for “back” to a previous screen.
+
 ## No Hover Effects
 
 This project is an iPad POS prototype. Touch devices have no hover state, so **never add hover effects** to any interactive element (buttons, inputs, textareas, tiles, etc.).
@@ -67,3 +83,12 @@ Modals in the iPad prototype must stay **inside the iPad** and be positioned **r
   ...
 </DialogContent>
 ```
+
+## Row components (settings / detail rows)
+
+For any **row** that shows a label on the left and control/link on the right (e.g. "Number of copies" + stepper, "Appearance" + Edit), the **left and right content must be vertically aligned at center** by default.
+
+- Use **`items-center`** on the row container so the trailing control aligns with the center of the label (and optional subtitle).
+- Use **`items-start`** only when the row has multi-line content on the left (e.g. "Categories & items" with a long list); in that case pass a prop like `largeGap` and use `items-start` when `largeGap` is true.
+
+Do not add or reintroduce row layouts that use `items-start` for single-line rows (e.g. "Number of copies", "Appearance", "Print receipts automatically"). Single-line rows must use `items-center`.

@@ -1,6 +1,7 @@
 "use client";
 
 import { Mic, MicOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CartFooterProps {
   onSave: () => void;
@@ -144,7 +145,10 @@ export function CartFooter({
       <button
         onClick={onPay}
         disabled={disabled}
-        className="flex-1 py-4 rounded-full bg-[#101010] text-[#ffffff] font-medium text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className={cn(
+          "flex-1 py-4 rounded-full font-medium text-base transition-colors disabled:pointer-events-none disabled:cursor-not-allowed",
+          disabled ? "bg-[#f0f0f0] text-[#959595]" : "bg-[#101010] text-[#ffffff]"
+        )}
       >
         Pay
       </button>

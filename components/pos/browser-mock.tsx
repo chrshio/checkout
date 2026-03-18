@@ -17,8 +17,11 @@ export function BrowserMock({ children, fillContainer = false }: BrowserMockProp
       value={{ containerRef: contentRef, contained: true }}
     >
       <div
-        className={`flex w-full justify-center bg-[#1a1a1a] p-4 sm:p-6 md:p-8 ${fillContainer ? "min-h-0 flex-1 flex-col pt-12 pb-16 items-center" : "min-h-screen pt-28 pb-16 items-start"}`}
+        className={`relative flex w-full justify-center bg-[#1a1a1a] p-4 sm:p-6 md:p-8 ${fillContainer ? "min-h-0 flex-1 flex-col pt-12 pb-16 items-center" : "min-h-screen pt-28 pb-16 items-start"}`}
       >
+        <p className="absolute left-4 top-4 z-10 text-xs text-white/40 sm:left-6 sm:top-6 md:left-8 md:top-8">
+          Design prototypes generated with AI.
+        </p>
         {/* Explicit spacer so there's always visible gap between variant selector and browser */}
         {fillContainer && <div className="w-full shrink-0 h-16" aria-hidden />}
         {/* Browser window - 1440px width; when fillContainer, flex-1 so it fills to 64px from bottom */}

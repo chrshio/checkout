@@ -54,6 +54,8 @@ export const metadata: Metadata = {
   },
 }
 
+// Next.js 16 passes `params` as a Promise; do not destructure or enumerate it.
+// (Cursor's component inspector may trigger "params must be unwrapped" when it enumerates props.)
 export default function RootLayout({
   children,
 }: Readonly<{

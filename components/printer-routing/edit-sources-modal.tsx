@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { X, Search, Monitor, Smartphone, Tablet, Check, Minus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Monitor, Smartphone, Tablet, Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { type SourceDevice, type DeviceType, locationDevices } from "@/lib/printer-data";
+import { SearchField } from "@/components/ui/search-field";
+import { type SourceDevice, type DeviceType, getDevicesForLocation } from "@/lib/printer-data";
 
 const deviceIcon: Record<DeviceType, React.ComponentType<{ className?: string }>> = {
   "Square Terminal": Monitor,
@@ -15,19 +16,35 @@ const deviceIcon: Record<DeviceType, React.ComponentType<{ className?: string }>
 interface EditSourcesModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Printer's location — only POSs at this location are shown. */
+  location: string;
   /** IDs of devices currently connected to this printer */
   selectedIds: Set<string>;
   onSave: (selectedIds: Set<string>) => void;
+  /** Optional device ID for the POS the user is currently on — shown with a "This device" pill */
+  currentPosDeviceId?: string;
 }
 
 export function EditSourcesModal({
   open,
   onOpenChange,
+  location,
   selectedIds,
   onSave,
+  currentPosDeviceId,
 }: EditSourcesModalProps) {
   const [draft, setDraft] = useState<Set<string>>(new Set(selectedIds));
   const [query, setQuery] = useState("");
+  const prevOpenRef = useRef(false);
+
+  // Sync draft when modal opens with current selectedIds (controlled open may not trigger onOpenChange(true))
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      setDraft(new Set(selectedIds));
+      setQuery("");
+    }
+    prevOpenRef.current = open;
+  }, [open, selectedIds]);
 
   const handleOpen = (isOpen: boolean) => {
     if (isOpen) {
@@ -37,6 +54,9 @@ export function EditSourcesModal({
     onOpenChange(isOpen);
   };
 
+  const locationDevices = getDevicesForLocation(location);
+  const effectiveCurrentPosId =
+    currentPosDeviceId ?? locationDevices.find((d) => d.isCurrentDevice)?.id;
   const filtered = locationDevices.filter((d) => {
     const q = query.toLowerCase();
     return (
@@ -102,7 +122,7 @@ export function EditSourcesModal({
               onClick={handleSave}
               disabled={!hasChanges}
               className={cn(
-                "flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-full",
+                "flex items-center justify-center min-h-[48px] px-5 py-2.5 rounded-full",
                 hasChanges
                   ? "bg-[#101010] text-white"
                   : "bg-[#f0f0f0] text-[#999] cursor-not-allowed"
@@ -115,7 +135,7 @@ export function EditSourcesModal({
           {/* Title + subtitle */}
           <div className="flex flex-col gap-1.5 shrink-0">
             <DialogTitle className="font-semibold text-[25px] leading-8 text-[#101010]">
-              Edit POS sources at Brooklyn
+              Edit POS sources at {location}
             </DialogTitle>
             <p className="text-[14px] leading-[22px] text-[#666]">
               Select which order sources you'd like to connect to this printer.
@@ -123,16 +143,12 @@ export function EditSourcesModal({
           </div>
 
           {/* Search */}
-          <div className="flex items-center gap-3 min-h-[44px] px-4 py-2.5 border border-[#dadada] rounded-full w-full shrink-0">
-            <Search className="w-5 h-5 text-[#666] shrink-0" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search"
-              className="flex-1 text-[15px] leading-6 text-[#101010] placeholder:text-[#666] outline-none bg-transparent"
-            />
-          </div>
+          <SearchField
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            size="medium"
+            wrapperClassName="shrink-0"
+          />
 
           {/* Device list */}
           <div className="flex flex-col overflow-y-auto scrollbar-hide -mx-1 px-1">
@@ -154,6 +170,7 @@ export function EditSourcesModal({
             {filtered.map((device, i) => {
               const Icon = deviceIcon[device.deviceType];
               const checked = draft.has(device.id);
+              const isCurrentPos = effectiveCurrentPosId != null && device.id === effectiveCurrentPosId;
               return (
                 <div
                   key={device.id}
@@ -172,10 +189,12 @@ export function EditSourcesModal({
                     <span className="text-[14px] leading-[22px] text-[#666]">
                       {device.deviceType}
                     </span>
-                    <span className="text-[14px] leading-[22px] text-[#666]">
-                      {device.codeName}
-                    </span>
                   </div>
+                  {isCurrentPos && (
+                    <span className="shrink-0 inline-flex items-center justify-center rounded-full bg-[#e3f2fd] px-2 py-1 text-[13px] font-medium text-[#1565c0]">
+                      This device
+                    </span>
+                  )}
                   <CheckboxButton
                     checked={checked}
                     onChange={() => toggleDevice(device.id)}

@@ -47,6 +47,8 @@ export interface PrinterGroup {
   name: string;
   printerIds: string[];
   settings: PrinterGroupSettings;
+  /** When true, use all POS at every group location; new printers added to the group get all sources at their location. */
+  selectAllSources?: boolean;
 }
 
 export const defaultPrinterGroupSettings: PrinterGroupSettings = {
@@ -81,6 +83,12 @@ export interface PrinterData {
   inPersonCategoryIds?: string[];
   onlineEnabled: boolean;
   sameAsInPerson: boolean;
+  /** When sameAsInPerson is false: category IDs for online/kiosk orders. */
+  onlineCategoryIds?: string[];
+  /** When sameAsInPerson is false: ticket appearance for online/kiosk orders. */
+  onlineTicketAppearance?: TicketAppearance;
+  /** When sameAsInPerson is false: number of copies for online/kiosk orders. */
+  onlineCopies?: number;
   ticketAppearance: TicketAppearance;
   ticketStubsEnabled: boolean;
   voidTicketsEnabled: boolean;
@@ -91,41 +99,77 @@ export interface PrinterData {
   lastUpdated?: string;
 }
 
-/** All POS devices registered at this business location. */
-export const locationDevices: SourceDevice[] = [
-  {
-    id: "src-counter",
-    name: "Counter",
-    deviceType: "Square Stand",
-    codeName: "Counter iPad",
-    isOnline: true,
-    isCurrentDevice: true,
-  },
-  {
-    id: "src-cafe-bar",
-    name: "Cafe bar",
-    deviceType: "Square Terminal",
-    codeName: "Cafe bar Terminal",
-    isOnline: true,
-    isCurrentDevice: false,
-  },
-  {
-    id: "src-kitchen",
-    name: "Kitchen",
-    deviceType: "Square Terminal",
-    codeName: "Kitchen Terminal",
-    isOnline: true,
-    isCurrentDevice: false,
-  },
-  {
-    id: "src-foh-handheld",
-    name: "Host stand",
-    deviceType: "Square Handheld",
-    codeName: "Host Handheld",
-    isOnline: false,
-    isCurrentDevice: false,
-  },
-];
+/** Current POS location name (default for new printers and when location is unset). */
+export const CURRENT_LOCATION_NAME = "Brooklyn";
+
+/** All business locations that have POS devices in this prototype. */
+export const LOCATION_NAMES = [
+  "Brooklyn",
+  "Flatiron",
+  "Soho",
+  "Lower Manhattan",
+  "Upper East",
+] as const;
+
+function locationToSlug(location: string): string {
+  return location.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
+
+/** Build POS devices for a single location (source of truth per location). */
+function buildDevicesForLocation(location: string): SourceDevice[] {
+  const slug = locationToSlug(location);
+  const prefix = (id: string) => `${slug}-${id}`;
+  return [
+    {
+      id: prefix("src-counter"),
+      name: "Front desk",
+      deviceType: "Square Stand",
+      codeName: "Front desk iPad",
+      isOnline: true,
+      isCurrentDevice: true,
+    },
+    {
+      id: prefix("src-cafe-bar"),
+      name: "Cafe bar",
+      deviceType: "Square Terminal",
+      codeName: "Cafe bar Terminal",
+      isOnline: true,
+      isCurrentDevice: false,
+    },
+    {
+      id: prefix("src-kitchen"),
+      name: "Kitchen",
+      deviceType: "Square Terminal",
+      codeName: "Kitchen Terminal",
+      isOnline: true,
+      isCurrentDevice: false,
+    },
+    {
+      id: prefix("src-foh-handheld"),
+      name: "Host stand",
+      deviceType: "Square Handheld",
+      codeName: "Host Handheld",
+      isOnline: false,
+      isCurrentDevice: false,
+    },
+  ];
+}
+
+const _devicesByLocationCache = new Map<string, SourceDevice[]>();
+
+/** POS devices at the given location. Choosing a source = choosing among POSs at that printer's location. */
+export function getDevicesForLocation(location: string): SourceDevice[] {
+  const normalized = location?.trim() || CURRENT_LOCATION_NAME;
+  let list = _devicesByLocationCache.get(normalized);
+  if (!list) {
+    list = buildDevicesForLocation(normalized);
+    _devicesByLocationCache.set(normalized, list);
+  }
+  return list;
+}
+
+/** All POS devices at the current (default) location. Kept for backward compatibility. */
+export const locationDevices: SourceDevice[] = getDevicesForLocation(CURRENT_LOCATION_NAME);
 
 export function computePrinterStatus(printer: PrinterData): PrinterStatus {
   if (printer.sources.length === 0) return "not-configured";
@@ -164,7 +208,7 @@ export function getWorstStatus(printers: PrinterData[]): PrinterStatus {
 }
 
 export function getUniqueLocationCount(printers: PrinterData[]): number {
-  const locations = new Set(printers.map((p) => p.location ?? "—").filter((l) => l !== "—"));
+  const locations = new Set(printers.map((p) => p.location ?? CURRENT_LOCATION_NAME));
   return locations.size;
 }
 
@@ -179,7 +223,7 @@ export const statusConfig: Record<PrinterStatus, { label: string; bg: string; te
   connected: { label: "Connected", bg: "bg-[#e0ffe3]", text: "text-[#008507]" },
   ready: { label: "Ready", bg: "bg-[#e0ffe3]", text: "text-[#008507]" },
   critical: { label: "Critical issue", bg: "bg-[#ffe5ea]", text: "text-[#bf0020]" },
-  "not-configured": { label: "Not configured", bg: "bg-[#fff3e0]", text: "text-[#c25400]" },
+  "not-configured": { label: "Not configured", bg: "bg-[#ffe5ea]", text: "text-[#bf0020]" },
 };
 
 /** Status pill variant for UI; includes "offline" for disconnected/offline states. */
@@ -190,8 +234,20 @@ export const statusPillConfig: Record<
   { label: string; bg: string; text: string }
 > = {
   ...statusConfig,
-  offline: { label: "Offline", bg: "bg-black/5", text: "text-[#666]" },
+  offline: { label: "Offline", bg: "bg-[#ffe5ea]", text: "text-[#bf0020]" },
 };
+
+/** Format a date for "Last updated" display. */
+export function formatLastUpdated(date: Date = new Date()): string {
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
 
 /** Random time from yesterday for prototype "Last updated" display (stable per load). */
 function randomLastUpdatedYesterday(): string {
@@ -203,14 +259,7 @@ function randomLastUpdatedYesterday(): string {
     0,
     0
   );
-  return yesterday.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
+  return formatLastUpdated(yesterday);
 }
 
 const lastUpdatedYesterday = randomLastUpdatedYesterday();
@@ -227,24 +276,7 @@ export const initialPrinters: PrinterData[] = [
     serialNumber: "343667732434502",
     paperSize: "80mm wide",
     paperType: "Thermal",
-    sources: [
-      {
-        id: "src-counter",
-        name: "Counter",
-        deviceType: "Square Stand",
-        codeName: "Counter iPad",
-        isOnline: true,
-        isCurrentDevice: true,
-      },
-      {
-        id: "src-cafe-bar",
-        name: "Cafe bar",
-        deviceType: "Square Terminal",
-        codeName: "Cafe bar Terminal",
-        isOnline: true,
-        isCurrentDevice: false,
-      },
-    ],
+    sources: getDevicesForLocation("Austin").slice(0, 2),
     receiptsEnabled: false,
     autoPrintReceipts: false,
     receiptCopies: 1,
@@ -275,16 +307,7 @@ export const initialPrinters: PrinterData[] = [
     serialNumber: "343667732434518",
     paperSize: "80mm wide",
     paperType: "Thermal",
-    sources: [
-      {
-        id: "src-kitchen",
-        name: "Kitchen",
-        deviceType: "Square Terminal",
-        codeName: "Kitchen Terminal",
-        isOnline: true,
-        isCurrentDevice: false,
-      },
-    ],
+    sources: getDevicesForLocation("Denver").slice(2, 3),
     receiptsEnabled: false,
     autoPrintReceipts: false,
     receiptCopies: 1,
@@ -315,16 +338,7 @@ export const initialPrinters: PrinterData[] = [
     serialNumber: "Y4J0200541",
     paperSize: "80mm wide",
     paperType: "Thermal",
-    sources: [
-      {
-        id: "src-foh-handheld",
-        name: "Host stand",
-        deviceType: "Square Handheld",
-        codeName: "Host Handheld",
-        isOnline: false,
-        isCurrentDevice: false,
-      },
-    ],
+    sources: getDevicesForLocation("Austin").slice(3, 4),
     receiptsEnabled: true,
     autoPrintReceipts: true,
     receiptCopies: 2,
@@ -395,16 +409,7 @@ export const initialPrinters: PrinterData[] = [
     serialNumber: "LBL902837465120",
     paperSize: "58mm wide",
     paperType: "Thermal",
-    sources: [
-      {
-        id: "src-counter",
-        name: "Counter",
-        deviceType: "Square Stand",
-        codeName: "Counter iPad",
-        isOnline: true,
-        isCurrentDevice: true,
-      },
-    ],
+    sources: getDevicesForLocation("San Diego").slice(0, 1),
     receiptsEnabled: true,
     autoPrintReceipts: false,
     receiptCopies: 1,

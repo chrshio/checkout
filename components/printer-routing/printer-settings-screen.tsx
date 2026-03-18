@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { Search, Check, X } from "lucide-react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBar } from "@/components/pos/status-bar";
 import { BottomNavigation } from "@/components/pos/bottom-navigation";
@@ -13,11 +13,15 @@ import {
   type PrinterStatus,
   computePrinterStatus,
   getPrintsSummary,
-  initialPrinters,
   defaultTicketAppearance,
+  getDevicesForLocation,
+  CURRENT_LOCATION_NAME,
+  formatLastUpdated,
 } from "@/lib/printer-data";
+import { usePrinterRouting } from "./printer-routing-context";
 import { getCategoriesShortText } from "@/lib/printer-categories-copy";
 import { StatusPill } from "@/components/ui/status-pill";
+import { PrinterRoutingToast } from "./toast";
 
 const sidebarSections = [
   { id: "checkout", label: "Checkout", type: "heading" as const },
@@ -39,31 +43,36 @@ const sidebarSections = [
 
 type View = "list" | "detail";
 
-interface ToastState {
-  message: string;
-  visible: boolean;
-}
-
 export function PrinterSettingsScreen() {
+  const { printers, setPrinters } = usePrinterRouting();
   const [activeSidebarItem, setActiveSidebarItem] = useState("printers");
   const [activeTab, setActiveTab] = useState<NavItem>("more");
   const [view, setView] = useState<View>("list");
-  const [printers, setPrinters] = useState<PrinterData[]>(initialPrinters);
   const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(null);
   const [newPrinterOpen, setNewPrinterOpen] = useState(false);
-  const [toast, setToast] = useState<ToastState>({ message: "", visible: false });
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
   const [isDetailExiting, setIsDetailExiting] = useState(false);
+  const [detailInitialTab, setDetailInitialTab] = useState<"details" | "ticket-settings" | "print-history" | null>(null);
   const exitCallbackRef = useRef<(() => void) | null>(null);
 
   const showToast = useCallback((message: string) => {
-    setToast({ message, visible: true });
+    setToastMessage(message);
+    setToastVisible(true);
   }, []);
 
-  useEffect(() => {
-    if (!toast.visible) return;
-    const timer = setTimeout(() => setToast((t) => ({ ...t, visible: false })), 3000);
-    return () => clearTimeout(timer);
-  }, [toast.visible]);
+  const dismissToast = useCallback(() => {
+    setToastVisible(false);
+  }, []);
+
+  /** POS is at Brooklyn; only show and configure printers at this location. */
+  const printersAtLocation = useMemo(
+    () =>
+      printers.filter(
+        (p) => (p.location ?? CURRENT_LOCATION_NAME) === CURRENT_LOCATION_NAME
+      ),
+    [printers]
+  );
 
   const selectedPrinter = printers.find((p) => p.id === selectedPrinterId) ?? null;
 
@@ -87,19 +96,30 @@ export function PrinterSettingsScreen() {
   }, [isDetailExiting]);
 
   const handleBackToList = useCallback(() => {
+    setDetailInitialTab(null);
     exitDetail(() => {});
   }, [exitDetail]);
 
   const handleSavePrinter = useCallback(
     (updated: PrinterData) => {
-      setPrinters((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      const withLastUpdated = { ...updated, lastUpdated: formatLastUpdated() };
+      setPrinters((prev) => prev.map((p) => (p.id === withLastUpdated.id ? withLastUpdated : p)));
       exitDetail(() => showToast(`Printer settings saved for ${updated.name}.`));
     },
     [exitDetail, showToast]
   );
 
   const handleNewPrinterDone = useCallback(
-    (printerName: string, mode: string) => {
+    (printerName: string, mode: string, defaultProfile?: "receipts" | "kitchen" | "both") => {
+      const currentDevice = getDevicesForLocation(CURRENT_LOCATION_NAME).find((d) => d.isCurrentDevice) ?? null;
+      const isCustom = mode === "custom";
+      const profile = defaultProfile ?? "receipts";
+      const receipts =
+        isCustom ? false : profile === "receipts" || profile === "both";
+      const inPerson =
+        isCustom ? true : profile === "kitchen" || profile === "both";
+      const online =
+        isCustom ? false : profile === "kitchen" || profile === "both";
       const newPrinter: PrinterData = {
         id: `printer-${Date.now()}`,
         name: printerName || "New Printer",
@@ -109,25 +129,26 @@ export function PrinterSettingsScreen() {
         serialNumber: `NEW${Date.now()}`,
         paperSize: "80mm wide",
         paperType: "Thermal",
-        sources: [],
-        receiptsEnabled: mode !== "custom",
+        sources: currentDevice ? [currentDevice] : [],
+        receiptsEnabled: receipts,
         autoPrintReceipts: false,
         receiptCopies: 1,
-        inPersonEnabled: mode === "custom",
+        inPersonEnabled: inPerson,
         inPersonCategories: "",
-        onlineEnabled: false,
-        sameAsInPerson: false,
+        onlineEnabled: online,
+        sameAsInPerson: online,
         ticketAppearance: { ...defaultTicketAppearance },
+        ticketStubsEnabled: false,
+        voidTicketsEnabled: false,
+        location: CURRENT_LOCATION_NAME,
+        lastUpdated: formatLastUpdated(),
       };
       setPrinters((prev) => [...prev, newPrinter]);
-      if (mode === "custom") {
-        setSelectedPrinterId(newPrinter.id);
-        setView("detail");
-      } else {
-        showToast(`${newPrinter.name} has been set up.`);
-      }
+      setSelectedPrinterId(newPrinter.id);
+      setView("detail");
+      setDetailInitialTab("ticket-settings");
     },
-    [showToast]
+    []
   );
 
   return (
@@ -203,7 +224,7 @@ export function PrinterSettingsScreen() {
           <div className="flex-1 h-full min-w-0 relative overflow-hidden bg-white">
             {/* List — always rendered underneath */}
             <div className="h-full overflow-x-hidden overflow-y-auto scrollbar-hide pt-0 pl-8 pr-8 pb-6">
-              <PrintersList printers={printers} onRowClick={handleRowClick} onConnectPrinter={() => setNewPrinterOpen(true)} />
+              <PrintersList printers={printersAtLocation} onRowClick={handleRowClick} onConnectPrinter={() => setNewPrinterOpen(true)} />
             </div>
 
             {/* Detail — slides in/out on top */}
@@ -218,22 +239,20 @@ export function PrinterSettingsScreen() {
                   onBack={handleBackToList}
                   onSave={handleSavePrinter}
                   onEditCategories={() => {}}
+                  initialTab={detailInitialTab ?? undefined}
                 />
               </div>
             )}
           </div>
         </div>
 
-        {/* Toast */}
-        {toast.visible && (
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-[#1a1a1a] text-white rounded-[16px] shadow-lg max-w-[400px]">
-            <Check className="w-5 h-5 text-[#34c759] shrink-0" strokeWidth={2.5} />
-            <span className="text-[14px] leading-[20px] flex-1">{toast.message}</span>
-            <button type="button" onClick={() => setToast((t) => ({ ...t, visible: false }))} className="shrink-0">
-              <X className="w-4 h-4 text-white/70" />
-            </button>
-          </div>
-        )}
+        <PrinterRoutingToast
+          message={toastMessage}
+          visible={toastVisible}
+          onDismiss={dismissToast}
+          bottom="1.5rem"
+          durationMs={3000}
+        />
       </div>
 
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} enabledTabs={["more"]} />
@@ -302,10 +321,10 @@ function PrintersList({
               <div className="w-[200px] shrink-0">
                 <span className="text-[14px] font-medium leading-[22px] text-[#101010]">Name</span>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="w-[120px] shrink-0">
                 <span className="text-[14px] font-medium leading-[22px] text-[#101010]">Prints</span>
               </div>
-              <div className="w-[160px] shrink-0">
+              <div className="flex-1 min-w-0">
                 <span className="text-[14px] font-medium leading-[22px] text-[#101010]">Categories & items</span>
               </div>
               <div className="w-[120px] shrink-0 text-left">
@@ -324,15 +343,17 @@ function PrintersList({
                   onClick={() => onRowClick(printer)}
                   className="flex items-center gap-4 pr-2 py-4 border-b border-[#f0f0f0] w-full text-left"
                 >
-                  <div className="w-[200px] shrink-0">
-                    <p className="text-[15px] font-medium leading-[22px] text-[#101010]">{printer.name}</p>
-                    <p className="text-[13px] leading-[18px] text-[#666]">{printer.model}</p>
+                  <div className="w-[200px] shrink-0 min-w-0">
+                    <div className="line-clamp-3">
+                      <p className="text-[15px] font-medium leading-[22px] text-[#101010]">{printer.name}</p>
+                      <p className="text-[13px] leading-[18px] text-[#666]">{printer.model}</p>
+                    </div>
+                  </div>
+                  <div className="w-[120px] shrink-0 min-w-0">
+                    <p className="text-[13px] leading-[18px] text-[#666] line-clamp-3">{prints}</p>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] leading-[18px] text-[#666]">{prints}</p>
-                  </div>
-                  <div className="w-[160px] shrink-0">
-                    <p className="text-[13px] leading-[18px] text-[#666]">{categories}</p>
+                    <p className="text-[13px] leading-[18px] text-[#666] line-clamp-3">{categories}</p>
                   </div>
                   <div className="w-[120px] shrink-0 flex items-center justify-start">
                     <StatusPill variant={printerStatus} />
@@ -349,15 +370,16 @@ function PrintersList({
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-20 gap-4">
-      <div className="w-16 h-16 rounded-full bg-[#f5f5f5] flex items-center justify-center">
-        <Search className="w-7 h-7 text-[#999]" />
+    <div className="flex-1 flex items-start justify-start px-0">
+      <div className="w-full rounded-2xl border border-black/10 bg-white p-10 flex flex-col items-center justify-center text-center shadow-none">
+        <p className="text-[17px] font-semibold text-[#101010]">No printers connected.</p>
+        <p className="text-[15px] leading-6 text-[#666] mt-2">
+          Expecting a printer to be connected?{" "}
+          <a href="#" className="text-link">
+            Troubleshoot
+          </a>
+        </p>
       </div>
-      <p className="text-[17px] font-semibold text-[#101010]">No printers connected.</p>
-      <p className="text-[15px] text-[#666]">
-        Expecting a printer to be connected?{" "}
-        <span className="text-link">Troubleshoot</span>
-      </p>
     </div>
   );
 }

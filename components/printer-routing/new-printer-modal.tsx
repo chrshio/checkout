@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { X, ChevronLeft, Receipt, ChefHat, PrinterCheck } from "lucide-react";
+import { X, ArrowLeft, Receipt, ChefHat, PrinterCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { TextField } from "@/components/ui/text-field";
 
 type Step = "setup" | "select-default";
 type SettingsMode = "default" | "custom";
@@ -77,11 +78,11 @@ export function NewPrinterModal({ open, onOpenChange, onDone }: NewPrinterModalP
         {step === "setup" ? (
           <div className="flex flex-col p-6 gap-6">
             {/* Header */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 w-full">
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0]"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0]"
               >
                 <X className="w-5 h-5 text-[#101010]" />
               </button>
@@ -91,7 +92,7 @@ export function NewPrinterModal({ open, onOpenChange, onDone }: NewPrinterModalP
               <button
                 type="button"
                 onClick={handleNext}
-                className="flex items-center justify-center min-h-[40px] px-5 py-2 bg-[#101010] text-white rounded-full"
+                className="flex items-center justify-center gap-2 min-h-[48px] px-5 py-2.5 bg-[#101010] text-white rounded-full"
               >
                 <span className="font-medium text-[15px] leading-6">
                   {settingsMode === "default" ? "Next" : "Done"}
@@ -110,16 +111,12 @@ export function NewPrinterModal({ open, onOpenChange, onDone }: NewPrinterModalP
 
             {/* Name input */}
             <div className="flex flex-col gap-1.5">
-              <div className="flex flex-col border border-[#dadada] rounded-xl px-4 py-3 focus-within:border-[#101010]">
-                <span className="text-[12px] font-medium text-[#666] leading-[18px]">Printer name</span>
-                <input
-                  type="text"
-                  value={printerName}
-                  onChange={(e) => setPrinterName(e.target.value)}
-                  placeholder="Front counter printer"
-                  className="text-[15px] leading-[22px] text-[#101010] placeholder:text-[#999] outline-none bg-transparent"
-                />
-              </div>
+              <TextField
+                label="Printer name"
+                value={printerName}
+                onChange={(e) => setPrinterName(e.target.value)}
+                wrapperClassName="rounded-xl border-[#dadada]"
+              />
               <p className="text-[13px] leading-[18px] text-[#666] px-1">
                 This will help you remember and recognize your device.
               </p>
@@ -164,13 +161,13 @@ export function NewPrinterModal({ open, onOpenChange, onDone }: NewPrinterModalP
         ) : (
           <div className="flex flex-col p-6 gap-4">
             {/* Header */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 w-full">
               <button
                 type="button"
                 onClick={() => setStep("setup")}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0]"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f0f0f0]"
               >
-                <ChevronLeft className="w-5 h-5 text-[#101010]" />
+                <ArrowLeft className="w-5 h-5 text-[#101010]" />
               </button>
               <DialogTitle className="flex-1 text-center font-semibold text-[17px] leading-[24px] text-[#101010]">
                 Select a default
@@ -178,7 +175,7 @@ export function NewPrinterModal({ open, onOpenChange, onDone }: NewPrinterModalP
               <button
                 type="button"
                 onClick={handleDone}
-                className="flex items-center justify-center min-h-[40px] px-5 py-2 bg-[#101010] text-white rounded-full"
+                className="flex items-center justify-center gap-2 min-h-[48px] px-5 py-2.5 bg-[#101010] text-white rounded-full"
               >
                 <span className="font-medium text-[15px] leading-6">Done</span>
               </button>
