@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { Plus } from "lucide-react";
+import { Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrowserMock } from "@/components/pos/browser-mock";
 import { PrinterSettingsWebScreen } from "@/components/printer-routing/printer-settings-web-screen";
@@ -106,7 +106,7 @@ export default function PrinterRoutingWebPage() {
         </BrowserMock>
       </div>
 
-      {/* Right: Quick add – layered on top; hidden below 1400px, reveal on hover at right edge (mirrors left prototype selector) */}
+      {/* Right: Fake a printer – layered on top; hidden below 1400px, reveal on hover at right edge (mirrors left prototype selector) */}
       <div
         className={cn(
           "absolute right-0 top-0 bottom-0 z-40 w-[220px] overflow-visible pointer-events-none",
@@ -125,14 +125,14 @@ export default function PrinterRoutingWebPage() {
           type="button"
           onClick={handleQuickAdd}
           className={cn(
-            "absolute right-6 top-1/2 -translate-y-1/2 z-50 flex items-center gap-1 rounded-full border border-white/20 bg-black/50 px-3 py-2.5 text-sm font-medium text-white backdrop-blur-md transition-colors active:bg-white/10",
+            "absolute right-6 top-1/2 -translate-y-1/2 z-50 flex items-center gap-2 rounded-full border border-white/20 bg-black/50 px-3 py-2.5 text-sm font-medium text-white backdrop-blur-md transition-colors active:bg-white/10",
             "min-[1400px]:opacity-100 min-[1400px]:pointer-events-auto",
             "max-[1399px]:opacity-0 max-[1399px]:pointer-events-none max-[1399px]:transition-opacity max-[1399px]:duration-200",
             "max-[1399px]:group-hover:opacity-100 max-[1399px]:group-hover:pointer-events-auto"
           )}
         >
-          <Plus className="w-4 h-4" />
-          Quick add
+          <Wand2 className="w-4 h-4" />
+          Fake a printer
         </button>
       </div>
     </main>
