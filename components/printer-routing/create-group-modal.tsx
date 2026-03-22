@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SearchField } from "@/components/ui/search-field";
@@ -221,9 +222,9 @@ export function CreateGroupModal({
         <div className="flex flex-col flex-1 min-h-0 px-6 pb-6 overflow-hidden">
           {step === "select-printers" ? (
             <>
-              <h2 className="text-[22px] font-semibold leading-7 text-[#101010]">
+              <DialogTitle className="text-[22px] font-semibold leading-7 text-[#101010]">
                 Add printers to group
-              </h2>
+              </DialogTitle>
               <p className="text-[14px] leading-[22px] text-[#666] mt-1">
                 Select printers that share the exact same settings.
               </p>
@@ -256,44 +257,45 @@ export function CreateGroupModal({
                   <div className="flex-1 overflow-y-auto mt-4 border border-black/5 rounded-lg divide-y divide-black/5">
                     {filteredPrintersStep1.map((printer) => {
                       const checked = selectedIds.has(printer.id);
+                      const rowCheckboxId = `create-group-printer-${printer.id}`;
                       return (
-                        <button
+                        <div
                           key={printer.id}
-                          type="button"
-                          onClick={() => togglePrinter(printer.id)}
                           className="flex items-center gap-4 w-full px-4 py-4 text-left hover:bg-black/[0.02]"
                         >
-                          <img
-                            src="/printer-image.png"
-                            alt=""
-                            className="w-10 h-10 object-contain shrink-0"
-                            aria-hidden
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[15px] font-medium leading-[22px] text-[#101010]">
-                              {printer.name}
-                            </p>
-                            <p className="text-[13px] leading-[18px] text-[#666]">
-                              {printer.model}
-                            </p>
-                            <p className="text-[13px] leading-[18px] text-[#666] mt-0.5 truncate">
-                              Prints {getPrintsSummary(printer).toLowerCase()}
-                            </p>
-                          </div>
-                          <p className="text-[13px] leading-[18px] text-[#666] shrink-0">
-                            {printer.location ?? CURRENT_LOCATION_NAME}
-                          </p>
-                          <div
-                            className="shrink-0"
-                            onClick={(e) => e.stopPropagation()}
+                          <label
+                            htmlFor={rowCheckboxId}
+                            className="flex flex-1 min-w-0 items-center gap-4 cursor-pointer text-left"
                           >
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={() => togglePrinter(printer.id)}
-                              className="size-5 rounded border-2 border-[rgba(0,0,0,0.42)]"
+                            <img
+                              src="/printer-image.png"
+                              alt=""
+                              className="w-10 h-10 object-contain shrink-0"
+                              aria-hidden
                             />
-                          </div>
-                        </button>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[15px] font-medium leading-[22px] text-[#101010]">
+                                {printer.name}
+                              </p>
+                              <p className="text-[13px] leading-[18px] text-[#666]">
+                                {printer.model}
+                              </p>
+                              <p className="text-[13px] leading-[18px] text-[#666] mt-0.5 truncate">
+                                Prints {getPrintsSummary(printer).toLowerCase()}
+                              </p>
+                            </div>
+                            <p className="text-[13px] leading-[18px] text-[#666] shrink-0">
+                              {printer.location ?? CURRENT_LOCATION_NAME}
+                            </p>
+                          </label>
+                          <Checkbox
+                            id={rowCheckboxId}
+                            checked={checked}
+                            onCheckedChange={() => togglePrinter(printer.id)}
+                            className="size-5 rounded border-2 border-[rgba(0,0,0,0.42)] shrink-0"
+                            aria-label={`Include ${printer.name} in group`}
+                          />
+                        </div>
                       );
                     })}
                   </div>
@@ -302,9 +304,9 @@ export function CreateGroupModal({
             </>
           ) : (
             <>
-              <h2 className="text-[22px] font-semibold leading-7 text-[#101010]">
+              <DialogTitle className="text-[22px] font-semibold leading-7 text-[#101010]">
                 Select a printer to use as a template
-              </h2>
+              </DialogTitle>
               <p className="text-[14px] leading-[22px] text-[#666] mt-1">
                 The printer you select will apply its settings to the group. Skip
                 this step to start settings from scratch.

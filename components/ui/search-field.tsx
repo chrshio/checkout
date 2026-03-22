@@ -60,6 +60,7 @@ function SearchField({
       <input
         type="search"
         value={value}
+        onChange={onChange}
         onFocus={(e) => {
           setFocused(true);
           onFocus?.(e);

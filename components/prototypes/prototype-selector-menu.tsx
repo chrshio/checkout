@@ -208,7 +208,7 @@ export function PrototypeSelectorMenu({ children }: { children: React.ReactNode 
     <div className="h-screen overflow-hidden relative flex flex-col bg-[#1a1a1a]">
       {/* Top-left: Portfolio credit — z-30 so above variant bar (z-10) and clickable */}
       <div className="absolute left-4 top-4 z-30 text-xs text-white/40 sm:left-6 sm:top-6 md:left-8 md:top-8">
-        Web-based design prototypes generated with AI. <br />
+        Design prototypes generated with AI. <br />
         For the portfolio walkthrough, go{" "}
         <a
           href="https://www.figma.com/deck/Z93Kg5O9XsrqamdSS9Em6I"

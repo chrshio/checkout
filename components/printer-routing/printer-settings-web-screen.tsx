@@ -401,7 +401,8 @@ export function PrinterSettingsWebScreen() {
                   <button
                     type="button"
                     onClick={() => setCreateGroupOpen(true)}
-                    className="flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-full font-medium text-[15px] leading-6 bg-[#101010] text-white"
+                    disabled={printers.length === 0}
+                    className="flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-full font-medium text-[15px] leading-6 bg-[#101010] text-white disabled:opacity-50 disabled:pointer-events-none"
                   >
                     Create group
                   </button>
