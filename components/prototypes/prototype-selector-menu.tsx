@@ -10,6 +10,7 @@ const VARIANT_SELECTOR_MIN_HEIGHT = 950;
 function variantShortLabel(item: PrototypeItem): string {
   const map: Record<string, string> = {
     cafe: "Standard",
+    "deferred-modifiers-off": "Deferred: Off",
     "variant-a": "Variant A",
     qsr: "QSR",
     fsr: "FSR",
@@ -146,13 +147,15 @@ export function PrototypeSelectorMenu({ children }: { children: React.ReactNode 
   }, [leftHoverIndex]);
 
   const variantSelectorBar = hasVariantSelector ? (
-    <div className="flex justify-center pt-6 pb-1 -mb-24 z-10 relative">
-      <div
-        ref={variantBarRef}
-        data-variant-selector-bar
-        className="grid h-11 items-center gap-1 rounded-full border-[1.4px] border-white/20 overflow-visible p-1 w-fit max-w-[min(520px,96vw)] relative"
-        style={{ gridAutoFlow: "column", gridAutoColumns: "max-content" }}
-      >
+    <div className="flex w-full min-w-0 justify-center px-4 pt-6 pb-1 -mb-24 z-10 relative sm:px-6 md:px-8">
+      {/* Scroll when viewport is narrow; bar grows to fit all pills up to available width */}
+      <div className="max-w-full min-w-0 overflow-x-auto overflow-y-visible">
+        <div
+          ref={variantBarRef}
+          data-variant-selector-bar
+          className="grid h-11 w-max max-w-none items-center gap-1 rounded-full border-[1.4px] border-white/20 overflow-visible p-1 relative mx-auto"
+          style={{ gridAutoFlow: "column", gridAutoColumns: "max-content" }}
+        >
         <div
           className="absolute inset-0 rounded-full pointer-events-none"
           style={{
@@ -200,6 +203,7 @@ export function PrototypeSelectorMenu({ children }: { children: React.ReactNode 
             </button>
           );
         })}
+        </div>
       </div>
     </div>
   ) : null;

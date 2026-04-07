@@ -57,6 +57,21 @@ interface ItemAddPanelProps {
   onAddSeat?: () => void;
   /** When true, hide the header (title + stepper); used when parent renders a custom header (e.g. modal). */
   hideHeader?: boolean;
+  /**
+   * When true (e.g. briefly after failed Add), show red tab dots, coral “Select” pills,
+   * and light-red tiles for unmet sections; parent clears after validation toast timing.
+   */
+  incompleteRequirementHighlightActive?: boolean;
+}
+
+function requirementPillClass(highlightActive: boolean | undefined, size: "sm" | "md") {
+  return cn(
+    "inline-flex items-center px-2 py-0.5 rounded-full font-medium transition-colors duration-500 ease-out",
+    size === "sm" ? "text-[12px] leading-[18px]" : "text-[14px] leading-[22px]",
+    highlightActive
+      ? "bg-[#fde8e8] text-[#b42318]"
+      : "bg-[#e5f0ff] text-[#005ad9]"
+  );
 }
 
 function ModifierTile({
@@ -64,16 +79,22 @@ function ModifierTile({
   isSelected,
   onClick,
   priceDisplay,
+  incompleteSurface,
 }: {
   option: { id: string; name: string; price?: number };
   isSelected: boolean;
   onClick: () => void;
   priceDisplay?: string | null;
+  /** Light red tile background when this section still needs a selection. */
+  incompleteSurface?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="relative flex flex-col justify-end h-[112px] w-full p-3 rounded-[12px] bg-[#f0f0f0] text-left transition-all active:scale-[0.97]"
+      className={cn(
+        "relative flex flex-col justify-end h-[112px] w-full p-3 rounded-[12px] text-left transition-colors duration-500 ease-out active:scale-[0.97] active:transition-transform active:duration-75",
+        incompleteSurface ? "bg-[#fde8e8]" : "bg-[#f0f0f0]"
+      )}
     >
       {isSelected && (
         <div className="absolute inset-0 rounded-[12px] border-2 border-[#101010] pointer-events-none">
@@ -115,6 +136,7 @@ export function ItemAddPanel({
   onSeatChange,
   onAddSeat,
   hideHeader,
+  incompleteRequirementHighlightActive = false,
 }: ItemAddPanelProps) {
   const isCombo = !!comboDefinition;
   const activeSlot =
@@ -183,6 +205,9 @@ export function ItemAddPanel({
     }
   };
 
+  /** Align section top to container top (no extra gap). */
+  const SCROLL_SECTION_TOP_GAP = 0;
+
   const scrollToSection = useCallback((tabId: string) => {
     setActiveTabId(tabId);
     const el = sectionRefs.current[tabId];
@@ -193,7 +218,7 @@ export function ItemAddPanel({
       const containerRect = container.getBoundingClientRect();
       const top = Math.max(
         0,
-        container.scrollTop + (elRect.top - containerRect.top) - 16
+        container.scrollTop + (elRect.top - containerRect.top) - SCROLL_SECTION_TOP_GAP
       );
       container.scrollTo({ top, behavior: "smooth" });
     }
@@ -325,7 +350,12 @@ export function ItemAddPanel({
             >
               {tab.label}
               {tab.alert && (
-                <span className="w-[8px] h-[8px] rounded-full shrink-0 bg-[#005ad9]" />
+                <span
+                  className={cn(
+                    "w-[8px] h-[8px] rounded-full shrink-0 transition-colors duration-500 ease-out",
+                    incompleteRequirementHighlightActive ? "bg-[#cc0023]" : "bg-[#005ad9]"
+                  )}
+                />
               )}
             </button>
           ))}
@@ -346,7 +376,12 @@ export function ItemAddPanel({
             <div className="flex items-center gap-2 min-h-[40px] py-2 w-full">
               <span className="text-[16px] font-medium text-[#101010]">Seat</span>
               {!draftSeatId && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#e5f0ff] text-[#005ad9] text-[14px] font-medium leading-[22px]">
+                <span
+                  className={requirementPillClass(
+                    incompleteRequirementHighlightActive,
+                    "md"
+                  )}
+                >
                   Select 1
                 </span>
               )}
@@ -356,7 +391,12 @@ export function ItemAddPanel({
                 <button
                   key={seat.id}
                   onClick={() => onSeatChange!(seat.id)}
-                  className="relative flex flex-col justify-end h-[112px] w-full p-3 rounded-[12px] bg-[#f0f0f0] text-left transition-all active:scale-[0.97]"
+                  className={cn(
+                    "relative flex flex-col justify-end h-[112px] w-full p-3 rounded-[12px] text-left transition-colors duration-500 ease-out active:scale-[0.97] active:transition-transform active:duration-75",
+                    incompleteRequirementHighlightActive && !draftSeatId
+                      ? "bg-[#fde8e8]"
+                      : "bg-[#f0f0f0]"
+                  )}
                 >
                   {draftSeatId === seat.id && (
                     <div className="absolute inset-0 rounded-[12px] border-2 border-[#101010] pointer-events-none">
@@ -371,7 +411,12 @@ export function ItemAddPanel({
               {onAddSeat && (
                 <button
                   onClick={onAddSeat}
-                  className="relative flex flex-col justify-end h-[112px] w-full p-3 rounded-[12px] bg-[#f0f0f0] text-left transition-all active:scale-[0.97]"
+                  className={cn(
+                    "relative flex flex-col justify-end h-[112px] w-full p-3 rounded-[12px] text-left transition-colors duration-500 ease-out active:scale-[0.97] active:transition-transform active:duration-75",
+                    incompleteRequirementHighlightActive && !draftSeatId
+                      ? "bg-[#fde8e8]"
+                      : "bg-[#f0f0f0]"
+                  )}
                 >
                   <span className="text-[16px] font-medium text-[#101010] leading-6 truncate">
                     Add seat
@@ -413,7 +458,12 @@ export function ItemAddPanel({
                   {group.name}
                 </span>
                 {requirementUnmet && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#e5f0ff] text-[#005ad9] text-[12px] font-medium leading-[18px]">
+                  <span
+                    className={requirementPillClass(
+                      incompleteRequirementHighlightActive,
+                      "sm"
+                    )}
+                  >
                     Select {group.minSelect}
                   </span>
                 )}
@@ -438,6 +488,9 @@ export function ItemAddPanel({
                       isSelected={effectiveDraftModifiers.includes(option.id)}
                       onClick={() => handleModifierSelect(group, option.id)}
                       priceDisplay={priceDisplay}
+                      incompleteSurface={
+                        incompleteRequirementHighlightActive && requirementUnmet
+                      }
                     />
                   );
                 })}

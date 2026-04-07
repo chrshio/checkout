@@ -22,6 +22,12 @@ export const projects: ProjectItem[] = [
       { id: "retail", name: "Retail mode", path: "/prototypes/checkout-pos/retail", ready: true },
       { id: "voice", name: "Voice", path: "/prototypes/checkout-pos/voice", ready: true },
       { id: "variant-a", name: "Variant A", path: "/prototypes/checkout-pos/variant-a", ready: true },
+      {
+        id: "deferred-modifiers-off",
+        name: "Deferred: Off",
+        path: "/prototypes/checkout-pos/deferred-modifiers-off",
+        ready: true,
+      },
     ],
   },
   {
